@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#bacdad</color>
-    <color name="colorPrimaryDark">#bacdad</color>
-    <color name="colorAccent">#F44336</color>
+    <color name="colorPrimary">#9c27b0</color>
+    <color name="colorPrimaryDark">#6a0080</color>
+    <color name="colorAccent">#ffc107</color>
+
+    <color name="activeTabColor">#9c27b0</color>
+    <color name="inactiveTabColor">#ECECEC</color>
+
 </resources>

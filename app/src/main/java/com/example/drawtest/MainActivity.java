@@ -12,15 +12,23 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 
 import android.widget.Toast;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +41,7 @@ import java.util.Objects;
 //https://www.tutorialspoint.com/how-to-manage-startactivityforresult-on-android
 //https://inducesmile.com/android/android-list-installed-apps-in-device-programmatically/
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends AppCompatActivity implements  BottomNavigationView.OnNavigationItemSelectedListener {
 
     Intent svc;
     TrackingService trackingService;
@@ -51,10 +59,20 @@ public class MainActivity extends FragmentActivity {
     private int startHour = 22;
     private int startMinute = 25;
 
+    HomeFragment homeFrag = new HomeFragment();
+    AppsFragment appsFrag = new AppsFragment();
+    SettingsFragment settingsFrag = new SettingsFragment();
+
+    FragmentManager fm = getSupportFragmentManager();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        fm.beginTransaction().add(R.id.frag_frame, homeFrag).commit();
+
+        ((BottomNavigationView)findViewById(R.id.bottomNav)).setOnNavigationItemSelectedListener(this);
 
 //        db = Room.databaseBuilder(getApplicationContext(), Favourites.class, "favourites").allowMainThreadQueries().build();
 
@@ -66,14 +84,7 @@ public class MainActivity extends FragmentActivity {
             startActivityForResult(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), MY_PERMISSIONS_REQUEST_PACKAGE_USAGE_STATS);
         }
 
-        lstApps = (RecyclerView) findViewById(R.id.lstApps);
-        layoutManager = new LinearLayoutManager(this);
-        lstApps.setLayoutManager(layoutManager);
-
         apps = new HashMap<>();
-
-        lstAppsAdapter = new AppsAdapter(apps);
-        lstApps.setAdapter(lstAppsAdapter);
 
         svc = new Intent(this, TrackingService.class);
         if(!bound) {
@@ -82,6 +93,25 @@ public class MainActivity extends FragmentActivity {
         }
 
 //        finish();
+    }
+
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        FragmentTransaction fT = fm.beginTransaction();
+        switch (item.getItemId()) {
+            case R.id.home:
+                fT.replace(R.id.frag_frame, homeFrag);
+                break;
+            case R.id.settings:
+                fT.replace(R.id.frag_frame, settingsFrag);
+                break;
+            case R.id.apps:
+                fT.replace(R.id.frag_frame, appsFrag);
+                break;
+        }
+        fT.commit();
+        return false;
     }
 
     @Override
@@ -130,19 +160,6 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    public void onClickRefresh(View view){
-        if(trackingService == null){
-            Log.d("Uh oh", "It's null!");
-        } else {
-            trackingService.refreshUsageStats();
-            apps.clear();
-            apps.putAll(trackingService.getTrackedAppsData());
-            Log.d("Length", "" + apps.size());
-            Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
-        }
-    }
-
-
     private ServiceConnection connection = new ServiceConnection() {
 
         @Override
@@ -155,7 +172,7 @@ public class MainActivity extends FragmentActivity {
             apps.clear();
             apps.putAll(trackingService.getTrackedAppsData());
             Log.d("Length", "" + apps.size());
-            Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
+//            Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
 
         }
 
@@ -179,5 +196,7 @@ public class MainActivity extends FragmentActivity {
         return false;
     }
 
-
+    public TrackingService getTrackingService(){
+        return trackingService;
+    }
 }

@@ -7,7 +7,7 @@ android:versionName="1.0" >
 
     <application
         android:label="App Tracker"
-        android:theme="@style/Theme.AppCompat.DayNight">
+        android:theme="@style/AppTheme">
     <activity
         android:name=".MainActivity"
         android:exported="true" >
@@ -24,8 +24,20 @@ android:versionName="1.0" >
         android:enabled="true"
         android:exported="false" />
 
+    <receiver
+        android:enabled="true"
+        android:name=".BootUpReceiver"
+        android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+    </receiver>
+
 </application>
 
+
+<!--https://stackoverflow.com/a/20920004/3032936-->
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
