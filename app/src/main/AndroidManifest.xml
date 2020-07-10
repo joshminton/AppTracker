@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.drawtest"
+android:versionCode="1"
+android:versionName="1.0" >
+
+    <application
+        android:label="App Tracker"
+        android:theme="@style/Theme.AppCompat.DayNight">
+    <activity
+        android:name=".MainActivity"
+        android:exported="true" >
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+
+    <service
+        android:name=".TrackingService"
+        android:permission="android.permission.BIND_JOB_SERVICE"
+        android:enabled="true"
+        android:exported="false" />
+
+</application>
+
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+
+</manifest>
+
+
+
+<!--https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff-->

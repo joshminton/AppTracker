@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/settings"
+        android:icon="@drawable/psychology_24px"
+        android:title="Settings" />
+    <item
+        android:id="@+id/apps"
+        android:icon="@drawable/psychology_24px"
+        android:title="Apps" />
+    <item
+        android:id="@+id/home"
+        android:icon="@drawable/psychology_24px"
+        android:title="Home" />
+</menu>
