@@ -10,6 +10,7 @@ import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -20,6 +21,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.RequiresApi;
+import androidx.room.Room;
 
 import android.util.Log;
 import android.view.Gravity;
@@ -34,6 +36,7 @@ import android.widget.Toast;
 import com.rvalerio.fgchecker.AppChecker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
@@ -62,6 +65,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private int startMinute = 30;
 
     HashMap<String, TrackedApp> trackedApps;
+    private TrackedAppDatabase db;
+    private SharedPreferences sharedPref;
+    ArrayList<String> trackedAppCodes;
 
     private boolean visible;
 
@@ -84,7 +90,11 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     @Override
     public void onCreate() {
         super.onCreate();
-        
+
+//        db = Room.databaseBuilder(getApplicationContext(), TrackedAppDatabase.class, "tracked-apps").allowMainThreadQueries().build();
+        sharedPref = getSharedPreferences("tracked-apps", Context.MODE_PRIVATE);
+        trackedAppCodes = getTrackedAppsFromPrefs();
+
         int LAYOUT_FLAG;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -278,6 +288,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         for(ApplicationInfo a : pm.getInstalledApplications(0)){
             if(pm.getLaunchIntentForPackage(a.packageName) != null) {
                 trackedApps.put(a.packageName, new TrackedApp(a.loadLabel(pm).toString(), a.packageName, a.loadIcon(pm), 0));
+                if(trackedAppCodes.contains(a.packageName)){
+                    trackedApps.get(a.packageName).setTracked(true);
+                }
             }
         }
     }
@@ -346,9 +359,21 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                     show();
                 }
 
-                refreshUsageStats();
-                Toast.makeText(context, "" + (trackedApps.get(appChecker.getForegroundApp(context)).getUsageToday() / 1000) + " seconds", Toast.LENGTH_SHORT).show();
+//                Log.d("Currently running", "" + appChecker.getForegroundApp(context));
 
+                refreshUsageStats();
+
+                String currentApp = appChecker.getForegroundApp(context);
+
+                if(trackedApps.get(currentApp).isTracked()){
+                    Toast.makeText(context, "Tracking!", Toast.LENGTH_SHORT).show();
+                }
+
+//                if(trackedApps.containsKey(currentApp)) {
+//
+//                    long usage = trackedApps.get(currentApp).getUsageToday();
+//                    Toast.makeText(context, (usage / 1000) + " seconds", Toast.LENGTH_SHORT).show();
+//                }
 
 //                Log.d("Hey", "" + appChecker.getForegroundApp(context));
                 handler.postDelayed(this, 10000);
@@ -440,6 +465,25 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     public HashMap<String, TrackedApp> getTrackedAppsData(){
         return trackedApps;
+    }
+
+    public ArrayList<String> getTrackedAppsFromPrefs(){
+        String masterString = sharedPref.getString("tracked-apps", "");
+        Log.d("Saved preferences:", masterString);
+        return new ArrayList<>(Arrays.asList(masterString.split("@")));
+    }
+
+    public void saveTrackedApps(){
+        Log.d("Saving preferences:", "here");
+        String trackedAppString = "";
+        for(TrackedApp tApp : trackedApps.values()){
+            if(tApp.isTracked()){
+                trackedAppString = trackedAppString.concat(tApp.getPackageName() + "@");
+            }
+        }
+        Log.d("Saving preferences:", trackedAppString);
+        sharedPref.edit().putString("tracked-apps", trackedAppString).apply();
+
     }
 
 }

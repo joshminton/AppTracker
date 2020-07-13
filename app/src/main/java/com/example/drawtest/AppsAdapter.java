@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 //taken from official Android RecyclerView tutorial
 public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> {
     private HashMap<String, TrackedApp> listApps;
+    private TrackingService trackingService;
     ArrayList<TrackedApp> arrayListApps;
 
     // Provide a reference to the views for each data item
@@ -33,7 +35,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
         public CardView listLayout;
         public TextView appName;
         public TextView appCode;
-        public ImageButton icon;
+        public ImageView icon;
         public CheckBox checkBox;
         public MyViewHolder(CardView v) {
             super(v);
@@ -62,13 +64,16 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 listApps.get(tApp.getPackageName()).setTracked(false);
                 tApp.setTracked(false);
             }
+            Log.d("YEEEE", "HAAAAA");
+            trackingService.saveTrackedApps();
         }
 
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public AppsAdapter(HashMap<String, TrackedApp> listApps) {
+    public AppsAdapter(HashMap<String, TrackedApp> listApps, TrackingService trackingService) {
         this.listApps = listApps;
+        this.trackingService = trackingService;
     }
 
     // Create new views (invoked by the layout manager)
@@ -93,7 +98,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
         Collections.sort(arrayListApps, new TrackedAppComparator());
 
         holder.appName.setText(arrayListApps.get(position).getName());
-        holder.appCode.setText(TimeConverter.millsToHoursMinutesSeconds(arrayListApps.get(position).getUsageToday()) + " (" + (arrayListApps.get(position).getUsageToday() / 1000) + "s)");
+        holder.appCode.setText(TimeConverter.millsToHoursMinutesSecondsVerbose(arrayListApps.get(position).getUsageToday()) + " (" + (arrayListApps.get(position).getUsageToday() / 1000) + "s)");
 
         holder.icon.setImageDrawable(arrayListApps.get(position).getIcon());
 

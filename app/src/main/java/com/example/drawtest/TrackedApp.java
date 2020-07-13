@@ -2,26 +2,21 @@ package com.example.drawtest;
 
 import android.graphics.drawable.Drawable;
 
-import androidx.annotation.NonNull;
-import androidx.room.ColumnInfo;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-
-
-@Entity
 public class TrackedApp {
-    @PrimaryKey
-    @NonNull private String packageName;
-    @ColumnInfo(name = "name") private String name;
-    @ColumnInfo(name = "icon") private Drawable icon;
-    @ColumnInfo(name = "googleUsageToday") private long googleUsageToday;
-    @ColumnInfo(name = "usageToday") private long usageToday;
-    @ColumnInfo(name = "isTracked") private boolean isTracked;
+
+    private String packageName;
+    private String name;
+    private Drawable icon;
+    private long googleUsageToday;
+    private long usageToday;
+    private boolean isTracked;
 
     public TrackedApp(String name, String packageName, Drawable icon) {
         this.name = name;
         this.packageName = packageName;
         this.icon = icon;
+        this.usageToday = 0;
+        this.googleUsageToday = 0;
     }
 
     public TrackedApp(String name, String packageName, Drawable icon, long usageToday, long googleUsageToday) {
@@ -30,6 +25,8 @@ public class TrackedApp {
         this.icon = icon;
         this.usageToday = usageToday;
         this.googleUsageToday = googleUsageToday;
+        this.isTracked = false;
+
     }
 
     public TrackedApp(String name, String packageName, Drawable icon, long usageToday) {
@@ -37,6 +34,8 @@ public class TrackedApp {
         this.packageName = packageName;
         this.icon = icon;
         this.usageToday = usageToday;
+        this.googleUsageToday = 0;
+        this.isTracked = false;
     }
 
     public String getName() {

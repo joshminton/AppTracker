@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -82,7 +84,7 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Button refreshBtn = getActivity().findViewById(R.id.refresh);
+        FloatingActionButton refreshBtn = getActivity().findViewById(R.id.refresh);
         refreshBtn.setOnClickListener(this);
 
         lstApps = (RecyclerView) getView().findViewById(R.id.lstApps);
@@ -91,10 +93,10 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
 
         apps = new HashMap<>();
 
-        lstAppsAdapter = new AppsAdapter(apps);
-        lstApps.setAdapter(lstAppsAdapter);
-
         trackingService = ((MainActivity) getActivity()).getTrackingService();
+
+        lstAppsAdapter = new AppsAdapter(apps, trackingService);
+        lstApps.setAdapter(lstAppsAdapter);
 
         onClickRefresh();
 
@@ -121,4 +123,10 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        trackingService.refreshUsageStats();
+        Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
+    }
 }
