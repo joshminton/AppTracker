@@ -3,6 +3,9 @@
     <color name="colorPrimary">#9c27b0</color>
     <color name="colorPrimaryDark">#6a0080</color>
     <color name="colorAccent">#ffc107</color>
+    <color name="colorAccentLight">#FFEBAC</color>
+
+    <color name="blankSurface">#FFFFFF</color>
 
     <color name="activeTabColor">#9c27b0</color>
     <color name="inactiveTabColor">#ECECEC</color>

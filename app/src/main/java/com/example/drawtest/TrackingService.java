@@ -1,5 +1,7 @@
 package com.example.drawtest;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -12,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
@@ -21,16 +24,19 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.RequiresApi;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.room.Room;
 
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.view.animation.AlphaAnimation;
 import android.widget.Toast;
 
 import com.rvalerio.fgchecker.AppChecker;
@@ -61,8 +67,10 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private boolean moving;
     private WindowManager wm;
 
-    private int startHour = 23;
-    private int startMinute = 30;
+    private int startHour = 00;
+    private int startMinute = 00;
+
+    private int dailyQuotaMinutes = 60;
 
     HashMap<String, TrackedApp> trackedApps;
     private TrackedAppDatabase db;
@@ -105,10 +113,13 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 
-        overlay = new View(this);
+
+        overlay = LayoutInflater.from(this).inflate(
+                R.layout.bar, null);
+
+        overlay.findViewById(R.id.sidebar).getLayoutParams().height = 1;
+
         overlay.setOnTouchListener(this);
-        overlay.setBackground(getDrawable(R.drawable.border));
-        overlay.setOnClickListener(this);
 
         WindowManager.LayoutParams params = new LayoutParams(1080,
                 1920,
@@ -123,6 +134,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         params.gravity = Gravity.LEFT | Gravity.TOP;
         params.x = 0;
         params.y = 0;
+        overlay.setAlpha(0f);
 
         wm.addView(overlay, params);
 
@@ -138,8 +150,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         Toast.makeText(this, "Hey!", Toast.LENGTH_SHORT).show();
 
 
-        String NOTIFICATION_CHANNEL_ID = getPackageName();
+        String NOTIFICATION_CHANNEL_ID = "new_chan2";
         NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "Overlay Channel", NotificationManager.IMPORTANCE_LOW);
+        chan.setSound(null, null);
 
         NotificationManager manager = (NotificationManager) this.getSystemService(NOTIFICATION_SERVICE);
 
@@ -168,7 +181,11 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         refreshUsageStats();
 
-        runTracking(this);
+//        runTracking(this);
+
+        new Handler().post(new tracking(""));
+
+        show();
 
     }
 
@@ -273,12 +290,30 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     }
 
     public void hide(){
-        overlay.setAlpha(0);
+        overlay.setAlpha(0.5f);
+        overlay.animate()
+                .alpha(0f)
+                .setDuration(400)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        overlay.setVisibility(View.GONE);
+                    }
+                });
         visible = false;
     }
 
+    //https://developer.android.com/training/animation/reveal-or-hide-view
     public void show(){
-        overlay.setAlpha(1);
+//        overlay.setAlpha(0f);
+        overlay.setVisibility(View.VISIBLE);
+        overlay.animate()
+                .alpha(0.5f)
+                .setDuration(400)
+                .setListener(null);
+
+
+//        overlay.setAlpha(1);
         visible = true;
     }
 
@@ -295,15 +330,12 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         }
     }
 
-    public void refreshUsageStats(){
+    public Map<String, AppUsageInfo> getUsageInfoThisDay(){
         UsageStatsManager mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
 
         GregorianCalendar cal = new GregorianCalendar();
         GregorianCalendar startCal;
-        Log.d("option", cal.get(Calendar.HOUR_OF_DAY) + " ");
-
         if((cal.get(Calendar.HOUR_OF_DAY) < startHour) || ((cal.get(Calendar.HOUR_OF_DAY) == startHour) && (cal.get(Calendar.MINUTE) < startMinute))){
-            Log.d("option", "A");
             cal.add(Calendar.DATE, -1);
             startCal = new GregorianCalendar(cal.get(Calendar.YEAR),
                     cal.get(Calendar.MONTH),
@@ -311,9 +343,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                     startHour,
                     startMinute,
                     0);
-            Log.d("date", startCal.getTime().toString());
         } else {
-            Log.d("option", "B");
 
             startCal = new GregorianCalendar(cal.get(Calendar.YEAR),
                     cal.get(Calendar.MONTH),
@@ -321,17 +351,17 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                     startHour,
                     startMinute,
                     0);
-            Log.d("date", startCal.getTime().toString());
         }
 
-        long startTime = System.currentTimeMillis();
-        Map<String, AppUsageInfo> usageStatsMap = queryUsageStatistics(this, startCal.getTimeInMillis(), System.currentTimeMillis());
-        Log.d("Time: ", "" + ((double) System.currentTimeMillis() - (double) startTime));
+        return queryUsageStatistics(this, startCal.getTimeInMillis(), System.currentTimeMillis());
+    }
 
+    public void refreshUsageStats(){
 
-//        Map<String, UsageStats> lUsageStatsMap = mUsageStatsManager.queryAndAggregateUsageStats(startCal.getTimeInMillis(), System.currentTimeMillis());
+        Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
 
         for(TrackedApp a : trackedApps.values()){
+            a.setUsageToday(0);
             if(usageStatsMap.get(a.getPackageName()) != null){
                 a.setUsageToday(usageStatsMap.get(a.getPackageName()).getTimeInForeground());
             }
@@ -343,43 +373,72 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         final Handler handler = new Handler();
         final UsageStatsManager usm = (UsageStatsManager) this.getSystemService(Context.USAGE_STATS_SERVICE);
 
+        final AppChecker appChecker = new AppChecker();
+
+        final String lastAppPkgName = "";
+
         handler.post(new Runnable() {
             @Override
             public void run(){
-
-                ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE); List<ActivityManager.RunningAppProcessInfo> runningAppProcessInfo = am.getRunningAppProcesses();
-
-                AppChecker appChecker = new AppChecker();
-
-//                if(trackedApps.get(appChecker.getForegroundApp(context)))
-
-                if(appChecker.getForegroundApp(context).equals("com.facebook.orca")){
-                    hide();
-                } else {
-                    show();
-                }
-
-//                Log.d("Currently running", "" + appChecker.getForegroundApp(context));
 
                 refreshUsageStats();
 
                 String currentApp = appChecker.getForegroundApp(context);
 
+
                 if(trackedApps.get(currentApp).isTracked()){
-                    Toast.makeText(context, "Tracking!", Toast.LENGTH_SHORT).show();
+                    show();
+                } else {
+                    hide();
                 }
 
-//                if(trackedApps.containsKey(currentApp)) {
-//
-//                    long usage = trackedApps.get(currentApp).getUsageToday();
-//                    Toast.makeText(context, (usage / 1000) + " seconds", Toast.LENGTH_SHORT).show();
-//                }
-
-//                Log.d("Hey", "" + appChecker.getForegroundApp(context));
                 handler.postDelayed(this, 10000);
             }
         });
     }
+
+    public class tracking implements Runnable {
+        private String lastPkgName;
+        public tracking(String lastPkgName) {
+            this.lastPkgName = lastPkgName;
+        }
+
+        //https://stackoverflow.com/questions/3873659/android-how-can-i-get-the-current-foreground-activity-from-a-service/27642535
+        final Handler handler = new Handler();
+
+        final AppChecker appChecker = new AppChecker();
+
+        @Override
+        public void run() {
+            refreshUsageStats();
+
+            String currentApp = appChecker.getForegroundApp(TrackingService.this);
+
+            Log.d("Tracked usage", quotaPercentageUsed() + "");
+
+//            if(!currentApp.equals(lastPkgName)){
+                if(trackedApps.containsKey(currentApp)){
+                    if(Objects.requireNonNull(trackedApps.get(currentApp)).isTracked()){
+                        show();
+                        overlay.findViewById(R.id.sidebar).getLayoutParams().height = (int) (1920d * quotaPercentageUsed());
+                        Log.d("HEIGHT?", overlay.findViewById(R.id.sidebar).getLayoutParams().height + " ");
+                        overlay.getRootView().requestLayout();
+
+                    } else {
+                        hide();
+                    }
+                } else {
+                    hide();
+                }
+
+                lastPkgName = currentApp;
+//            }
+
+
+            handler.postDelayed(new tracking(lastPkgName), 500);
+        }
+    }
+
 
     //main suggestion https://stackoverflow.com/a/61595525/3032936
     //some influence https://stackoverflow.com/a/50647945/3032936
@@ -402,9 +461,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
             String packageName = currentEvent.getPackageName();
             if (currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED || currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED ||
                     currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_STOPPED) {
-//                if(packageName.equals("com.DanVogt.DATAWING")){
-//                    Log.d("DataWing:", currentEvent.getEventType() + " " + currentEvent.getTimeStamp()/1000);
-//                }
                 allEvents.add(currentEvent); // an extra event is found, add to all events list.
                 // taking it into a collection to access by package name
                 if (!map.containsKey(packageName)) {
@@ -419,6 +475,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         for (int i = 0; i < allEvents.size() - 1; i++) {
             UsageEvents.Event event = allEvents.get(i);
+//            if(event.getPackageName().equals("com.android.chrome")){
+//                Log.d("SPOTIFY", String.valueOf(event.getEventType()) + " " + event.getTimeStamp() / 1000 / 60 / 60);
+//            }
             if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED){
                 if(!appEvents.containsKey(event.getPackageName())){
                     appEvents.put(event.getPackageName(), event.getTimeStamp());
@@ -428,7 +487,18 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                     long diff = event.getTimeStamp() - appEvents.get(event.getPackageName());
 //                    Log.d("EVENT: " , " " + diff);
                     Objects.requireNonNull(map.get(event.getPackageName())).timeInForeground += diff;
+//                    if(event.getPackageName().equals("com.android.chrome")){
+//                        Log.d("SPOTIFY", String.valueOf(diff));
+//                    }
                     appEvents.remove(event.getPackageName());
+                } else {
+                    if(map.get(event.getPackageName()).getTimeInForeground() == 0){
+                        long diff = event.getTimeStamp() - startTime;
+//                        if(event.getPackageName().equals("com.android.chrome")){
+//                            Log.d("SPOTIFY ..", String.valueOf(diff));
+//                        }
+                        Objects.requireNonNull(map.get(event.getPackageName())).timeInForeground += diff;
+                    }
                 }
             }
         }
@@ -484,6 +554,43 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         Log.d("Saving preferences:", trackedAppString);
         sharedPref.edit().putString("tracked-apps", trackedAppString).apply();
 
+    }
+
+    private long trackedUsageInLast(long seconds){
+        long millis = seconds*1000;
+        long usage = 0;
+
+        Map<String, AppUsageInfo> usageStatsMap = queryUsageStatistics(this, System.currentTimeMillis() - millis, System.currentTimeMillis());
+
+        for (TrackedApp tApp : trackedApps.values()){
+            if(tApp.isTracked()){
+                if(usageStatsMap.get(tApp.getPackageName()) != null){
+                    usage += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();
+                }
+            }
+        }
+
+        return usage;
+    }
+
+    private long trackedUsageThisDaySeconds(){
+        Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
+        long usage = 0;
+
+        for (TrackedApp tApp : trackedApps.values()){
+            if(tApp.isTracked()){
+                if(usageStatsMap.get(tApp.getPackageName()) != null){
+                    usage += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();
+                }
+            }
+        }
+
+        return usage / 1000;
+    }
+
+    private double quotaPercentageUsed(){
+        Log.d("Tracked usage this day minutes ", "" + trackedUsageThisDaySeconds());
+        return (double) trackedUsageThisDaySeconds() / (dailyQuotaMinutes * 60);
     }
 
 }

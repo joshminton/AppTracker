@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/apps"
-        android:icon="@drawable/psychology_24px"
+        android:icon="@drawable/ic_baseline_apps_24"
         android:title="Apps" />
     <item
         android:id="@+id/home"
-        android:icon="@drawable/psychology_24px"
+        android:icon="@drawable/ic_baseline_speed_24"
         android:title="Home" />
     <item
         android:id="@+id/settings"
-        android:icon="@drawable/psychology_24px"
+        android:icon="@drawable/ic_baseline_settings_24"
         android:title="Settings" />
 </menu>

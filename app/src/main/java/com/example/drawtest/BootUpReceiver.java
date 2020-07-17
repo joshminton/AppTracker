@@ -3,6 +3,8 @@ package com.example.drawtest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
+import android.widget.Toast;
 
 public class BootUpReceiver extends BroadcastReceiver{
 
@@ -14,9 +16,18 @@ public class BootUpReceiver extends BroadcastReceiver{
 //        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 //        context.startActivity(i);
 
+        Toast.makeText(context, "ON BOOT", Toast.LENGTH_LONG);
+
         /***** For start Service  ****/
         Intent startServiceIntent = new Intent(context, TrackingService.class);
         context.startService(startServiceIntent);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(new Intent(context,TrackingService.class));
+        } else {
+            context.startService(new Intent(context, TrackingService.class));
+        }
+
     }
 
 }

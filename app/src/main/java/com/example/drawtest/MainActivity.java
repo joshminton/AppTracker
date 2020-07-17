@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
         svc = new Intent(this, TrackingService.class);
         if(!bound) {
-            startService(svc);
+            startForegroundService(svc);
             bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
 
@@ -155,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     public void onClickStartStop(View view){
         svc = new Intent(this, TrackingService.class);
         if(!bound) {
-            startService(svc);
+            startForegroundService(svc);
             bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
     }

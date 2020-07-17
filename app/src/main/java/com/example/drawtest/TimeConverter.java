@@ -21,9 +21,7 @@ public class TimeConverter {
         double seconds = Math.floor(mills/1000);
         mills -= seconds * 1000;
 
-        return ((hours != 0) ? ((hours < 10) ? "0" : "" + (int) hours) +" hours " : "") + ((minutes < 10) ? "0" : "") + (int) minutes+" minutes";
+        return ((hours != 0) ? (int) hours +" hours " : "") + ((minutes < 10) ? "0" : "") + (int) minutes+" minutes";
 
     }
-
-
 }

@@ -58,11 +58,15 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 checkBox.setChecked(true);
                 listApps.get(tApp.getPackageName()).setTracked(true);
                 tApp.setTracked(true);
+                listLayout.setCardElevation(10);
+                listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.colorAccentLight));
             }
             else  {
                 checkBox.setChecked(false);
                 listApps.get(tApp.getPackageName()).setTracked(false);
                 tApp.setTracked(false);
+                listLayout.setCardElevation(1);
+                listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.blankSurface));
             }
             Log.d("YEEEE", "HAAAAA");
             trackingService.saveTrackedApps();
@@ -104,8 +108,12 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
 
         if(arrayListApps.get(position).isTracked()){
             holder.checkBox.setChecked(true);
+            holder.listLayout.setCardElevation(10);
+            holder.listLayout.setCardBackgroundColor(holder.itemView.getResources().getColor(R.color.colorAccentLight));
         } else {
             holder.checkBox.setChecked(false);
+            holder.listLayout.setCardElevation(1);
+            holder.listLayout.setCardBackgroundColor(holder.itemView.getResources().getColor(R.color.blankSurface));
         }
 
 
