@@ -2,8 +2,10 @@ package com.example.drawtest;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
+import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
@@ -15,7 +17,9 @@ import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -28,6 +32,7 @@ import android.view.View;
 
 import android.widget.Toast;
 
+import com.adriangl.overlayhelper.OverlayHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
@@ -40,6 +45,7 @@ import java.util.Objects;
 //https://blog.usejournal.com/building-an-app-usage-tracker-in-android-fe79e959ab26
 //https://www.tutorialspoint.com/how-to-manage-startactivityforresult-on-android
 //https://inducesmile.com/android/android-list-installed-apps-in-device-programmatically/
+//https://github.com/adriangl/OverlayHelper/blob/master/app/src/main/java/com/adriangl/overlayhelperexample/MainActivity.java
 
 public class MainActivity extends AppCompatActivity implements  BottomNavigationView.OnNavigationItemSelectedListener {
 
@@ -50,6 +56,11 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     RecyclerView.LayoutManager layoutManager;
     AppsAdapter lstAppsAdapter;
     HashMap<String, TrackedApp> apps;
+
+    OverlayHelper overlayHelper;
+
+    private boolean drawAccess = false;
+    private boolean usageAccess = false;
 
     private TrackedApp db;
 
@@ -68,31 +79,53 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.permissions_needed);
+
+
+//        db = Room.databaseBuilder(getApplicationContext(), Favourites.class, "favourites").allowMainThreadQueries().build();
+
+        appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
+
+
+        overlayHelper = new OverlayHelper(this.getApplicationContext(), new OverlayHelper.OverlayPermissionChangedListener() {
+            @Override public void onOverlayPermissionCancelled() {
+                Toast.makeText(MainActivity.this, "Draw overlay permissions request cancelled", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override public void onOverlayPermissionGranted() {
+                setDrawPositive();
+                if(usageAccess){
+                    advanceWithService();
+                }
+            }
+
+            @Override public void onOverlayPermissionDenied() {
+                Toast.makeText(MainActivity.this, "Draw overlay permissions request denied", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        overlayHelper.startWatching();
+
+        checkPermissions();
+
+        apps = new HashMap<>();
+
+//        finish();
+    }
+
+    private void advanceWithService(){
+
         setContentView(R.layout.activity_main);
 
         fm.beginTransaction().add(R.id.frag_frame, homeFrag).commit();
 
         ((BottomNavigationView)findViewById(R.id.bottomNav)).setOnNavigationItemSelectedListener(this);
 
-//        db = Room.databaseBuilder(getApplicationContext(), Favourites.class, "favourites").allowMainThreadQueries().build();
-
-        appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(), getPackageName());
-
-        if(mode != AppOpsManager.MODE_ALLOWED){
-            startActivityForResult(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), MY_PERMISSIONS_REQUEST_PACKAGE_USAGE_STATS);
-        }
-
-        apps = new HashMap<>();
-
         svc = new Intent(this, TrackingService.class);
         if(!bound) {
             startForegroundService(svc);
             bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
-
-//        finish();
     }
 
 
@@ -131,6 +164,21 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         }
     }
 
+    private void checkPermissions(){
+        if(overlayHelper.canDrawOverlays()){
+            drawAccess = true;
+            setDrawPositive();
+        }
+        if(appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED){
+            usageAccess = true;
+            setUsagePositive();
+        }
+        if(usageAccess & drawAccess){
+            advanceWithService();
+        }
+    }
+
     private boolean isSystemPackage(PackageInfo pkgInfo) {
         return (pkgInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
     }
@@ -142,11 +190,14 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 //            if (resultCode == RESULT_OK) {
                 if(appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                         android.os.Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED){
-                    Toast.makeText(this, "Success!", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Failed!", Toast.LENGTH_SHORT).show();
+                    setUsagePositive();
+                    if(drawAccess){
+                        advanceWithService();
+                    }
                 }
-//            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+            overlayHelper.onRequestDrawOverlaysPermissionResult(requestCode);
         }
     }
 
@@ -182,7 +233,38 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         }
     };
 
+    //https://stackoverflow.com/questions/43513919/android-alert-dialog-with-one-two-and-three-buttons
+    public void onClickUsagePermission(View view){
+        if(!usageAccess){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Request app usage permission?");
+            builder.setMessage("You have to give permission to view device usage statistics for this app to work. Only the amount of time spent in each app will be accessed. No personal information will be exposed.");
 
+            // add the buttons
+            builder.setPositiveButton("Enable", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    startActivityForResult(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), MY_PERMISSIONS_REQUEST_PACKAGE_USAGE_STATS);
+                }
+            });
+            builder.setNegativeButton("Cancel", null);
+
+            // create and show the alert dialog
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+    }
+
+    public void onClickDrawPermission(View view){
+        if(!overlayHelper.canDrawOverlays()){
+            overlayHelper.requestDrawOverlaysPermission(
+                    MainActivity.this,
+                    "Request draw overlays permission?",
+                    "You have to enable the draw overlays permission for this app to work",
+                    "Enable",
+                    "Cancel");
+        }
+    }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -194,6 +276,17 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         }
         Log.i ("isMyServiceRunning?", false+"");
         return false;
+    }
+
+    private void setUsagePositive(){
+        ((CardView) findViewById(R.id.usageAccessCard)).setCardBackgroundColor(getColor(R.color.success));
+        findViewById(R.id.txtUsageIcon).setBackground(getDrawable(R.drawable.ic_baseline_check_circle_outline_24));
+
+    }
+
+    private void setDrawPositive(){
+        ((CardView) findViewById(R.id.drawAccessCard)).setCardBackgroundColor(getColor(R.color.success));
+        findViewById(R.id.txtDrawIcon).setBackground(getDrawable(R.drawable.ic_baseline_check_circle_outline_24));
     }
 
     public TrackingService getTrackingService(){

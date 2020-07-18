@@ -10,4 +10,7 @@
     <color name="activeTabColor">#9c27b0</color>
     <color name="inactiveTabColor">#ECECEC</color>
 
+    <color name="error">#DC4545</color>
+    <color name="success">#45DC6B</color>
+
 </resources>
