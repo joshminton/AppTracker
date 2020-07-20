@@ -126,7 +126,6 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onResume() {
         super.onResume();
-        trackingService.refreshUsageStats();
-        Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
+        onClickRefresh();
     }
 }

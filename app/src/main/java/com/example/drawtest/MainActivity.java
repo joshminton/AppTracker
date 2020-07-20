@@ -191,6 +191,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
                 if(appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                         android.os.Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED){
                     setUsagePositive();
+                    usageAccess = true;
                     if(drawAccess){
                         advanceWithService();
                     }

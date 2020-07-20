@@ -17,7 +17,11 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Binder;
 import android.os.Build;
@@ -27,6 +31,7 @@ import androidx.annotation.RequiresApi;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.room.Room;
 
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -37,8 +42,11 @@ import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.view.animation.AlphaAnimation;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.rvalerio.fgchecker.AppChecker;
 
 import java.util.ArrayList;
@@ -59,6 +67,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     private View topLeftView;
 
+    private int height;
+    private int width;
+
     private View overlay;
     private float offsetX;
     private float offsetY;
@@ -70,7 +81,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private int startHour = 00;
     private int startMinute = 00;
 
-    private int dailyQuotaMinutes = 60;
+    private int dailyQuotaMinutes = 4;
 
     HashMap<String, TrackedApp> trackedApps;
     private TrackedAppDatabase db;
@@ -99,6 +110,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     public void onCreate() {
         super.onCreate();
 
+
+
 //        db = Room.databaseBuilder(getApplicationContext(), TrackedAppDatabase.class, "tracked-apps").allowMainThreadQueries().build();
         sharedPref = getSharedPreferences("tracked-apps", Context.MODE_PRIVATE);
         trackedAppCodes = getTrackedAppsFromPrefs();
@@ -113,13 +126,33 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(displayMetrics);
+        height = displayMetrics.heightPixels;
+        width = displayMetrics.widthPixels;
 
-        overlay = LayoutInflater.from(this).inflate(
-                R.layout.bar, null);
+        overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
-        overlay.findViewById(R.id.sidebar).getLayoutParams().height = 1;
+//        ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(100,0,0,0);
 
-        overlay.setOnTouchListener(this);
+//        final ImageView imageView = (ImageView) overlay.findViewById(R.id.innerGlow);
+//        final Matrix matrix = imageView.getImageMatrix();
+//        final float imageWidth = imageView.getDrawable().getIntrinsicWidth();
+//        final int screenWidth = getResources().getDisplayMetrics().widthPixels;
+//        final float scaleRatio = screenWidth / imageWidth;
+//        matrix.postScale(scaleRatio, scaleRatio);
+//        imageView.setImageMatrix(matrix);
+
+//
+//        overlay.findViewById(R.id.sidebar).getLayoutParams().height = 1;
+
+//        overlay.setOnTouchListener(this);
+//        overlay.getBackground().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
+//        overlay.setOnClickListener(this);
+
+//        overlay.setBackground(getDrawable(R.drawable.gradient_shape));
+//        overlay.setFadeEdges(true, true, true, true);
+//        overlay.setFadeSizes(100, 100, 100, 100);
 
         WindowManager.LayoutParams params = new LayoutParams(1080,
                 1920,
@@ -134,7 +167,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         params.gravity = Gravity.LEFT | Gravity.TOP;
         params.x = 0;
         params.y = 0;
-        overlay.setAlpha(0f);
+//        overlay.setAlpha(0f);
 
         wm.addView(overlay, params);
 
@@ -290,7 +323,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     }
 
     public void hide(){
-        overlay.setAlpha(0.5f);
+        overlay.setAlpha(1f);
         overlay.animate()
                 .alpha(0f)
                 .setDuration(400)
@@ -308,7 +341,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 //        overlay.setAlpha(0f);
         overlay.setVisibility(View.VISIBLE);
         overlay.animate()
-                .alpha(0.5f)
+                .alpha(1f)
                 .setDuration(400)
                 .setListener(null);
 
@@ -420,9 +453,18 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                 if(trackedApps.containsKey(currentApp)){
                     if(Objects.requireNonNull(trackedApps.get(currentApp)).isTracked()){
                         show();
-                        overlay.findViewById(R.id.sidebar).getLayoutParams().height = (int) (1920d * quotaPercentageUsed());
-                        Log.d("HEIGHT?", overlay.findViewById(R.id.sidebar).getLayoutParams().height + " ");
+//                        overlay.findViewById(R.id.sidebar).getLayoutParams().height = (int) (1920d * quotaPercentageUsed());
+
+                        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
+                        Log.d("TopFade", "" + glowHeight);
+
+//                        ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(topFade, 0, 0, 0);
+                        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
                         overlay.getRootView().requestLayout();
+
+
+                        Log.d("HEIGHT?", overlay.findViewById(R.id.innerGlow).getLayoutParams().height + " " + ", " + glowHeight);
+//                        overlay.getRootView().requestLayout();
 
                     } else {
                         hide();
@@ -590,7 +632,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     private double quotaPercentageUsed(){
         Log.d("Tracked usage this day minutes ", "" + trackedUsageThisDaySeconds());
-        return (double) trackedUsageThisDaySeconds() / (dailyQuotaMinutes * 60);
+        return Math.min((double) trackedUsageThisDaySeconds() / (dailyQuotaMinutes * 60), 1);
     }
 
 }
