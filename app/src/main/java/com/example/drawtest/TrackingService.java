@@ -81,7 +81,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private int startHour = 00;
     private int startMinute = 00;
 
-    private int dailyQuotaMinutes = 4;
+    private int dailyQuotaMinutes = 10;
 
     HashMap<String, TrackedApp> trackedApps;
     private TrackedAppDatabase db;
@@ -154,8 +154,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 //        overlay.setFadeEdges(true, true, true, true);
 //        overlay.setFadeSizes(100, 100, 100, 100);
 
-        WindowManager.LayoutParams params = new LayoutParams(1080,
-                1920,
+        WindowManager.LayoutParams params = new LayoutParams(width,
+                height,
                 LAYOUT_FLAG,
                 LayoutParams.FLAG_NOT_FOCUSABLE
                         | LayoutParams.FLAG_NOT_TOUCH_MODAL
@@ -477,7 +477,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 //            }
 
 
-            handler.postDelayed(new tracking(lastPkgName), 500);
+            handler.postDelayed(new tracking(lastPkgName), 1000);
         }
     }
 
