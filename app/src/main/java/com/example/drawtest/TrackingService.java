@@ -2,7 +2,7 @@ package com.example.drawtest;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.app.ActivityManager;
+import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,22 +14,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
+import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.RequiresApi;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.room.Room;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -41,12 +35,9 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.view.animation.AlphaAnimation;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.rvalerio.fgchecker.AppChecker;
 
 import java.util.ArrayList;
@@ -78,15 +69,22 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private boolean moving;
     private WindowManager wm;
 
+    private android.app.Notification notification;
+    private Notification.Builder mBuilder;
+
     private int startHour = 00;
     private int startMinute = 00;
 
     private int dailyQuotaMinutes = 10;
 
-    HashMap<String, TrackedApp> trackedApps;
+    private long interval = 2500;
+
+    HashMap<String, TrackedApp> apps;
     private TrackedAppDatabase db;
     private SharedPreferences sharedPref;
     ArrayList<String> trackedAppCodes;
+
+    private int colourFilterColour;
 
     private boolean visible;
 
@@ -133,27 +131,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
-//        ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(100,0,0,0);
-
-//        final ImageView imageView = (ImageView) overlay.findViewById(R.id.innerGlow);
-//        final Matrix matrix = imageView.getImageMatrix();
-//        final float imageWidth = imageView.getDrawable().getIntrinsicWidth();
-//        final int screenWidth = getResources().getDisplayMetrics().widthPixels;
-//        final float scaleRatio = screenWidth / imageWidth;
-//        matrix.postScale(scaleRatio, scaleRatio);
-//        imageView.setImageMatrix(matrix);
-
-//
-//        overlay.findViewById(R.id.sidebar).getLayoutParams().height = 1;
-
-//        overlay.setOnTouchListener(this);
-//        overlay.getBackground().setColorFilter(getResources().getColor(R.color.colorPrimary), PorterDuff.Mode.SRC_IN);
-//        overlay.setOnClickListener(this);
-
-//        overlay.setBackground(getDrawable(R.drawable.gradient_shape));
-//        overlay.setFadeEdges(true, true, true, true);
-//        overlay.setFadeSizes(100, 100, 100, 100);
-
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
                 LAYOUT_FLAG,
@@ -167,7 +144,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         params.gravity = Gravity.LEFT | Gravity.TOP;
         params.x = 0;
         params.y = 0;
-//        overlay.setAlpha(0f);
 
         wm.addView(overlay, params);
 
@@ -195,20 +171,25 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         PendingIntent pendingIntent =
                 PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-        android.app.Notification notification =  new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle("A Notification")
-                .setContentText("Notice me!")
+        //https://stackoverflow.com/a/15538209/3032936
+
+        mBuilder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID);
+
+        notification =  mBuilder
+                .setContentTitle("Tracking your usage.")
+//                .setContentText("Currently used " + (int) (quotaPercentageUsed() * 100) + "%")
                 .setSmallIcon(R.drawable.psychology_24px)
                 .setContentIntent(pendingIntent)
                 .setTicker("Oi oi!")
                 .setColorized(true)
+                .setOnlyAlertOnce(true)
                 .setColor(getResources().getColor(R.color.colorAccent))
                 .build();
         startForeground(1, notification);
 
         visible = true;
 
-        trackedApps = new HashMap<>();
+        apps = new HashMap<>();
 
         importAppsList();
 
@@ -355,9 +336,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         PackageManager pm = getPackageManager();
         for(ApplicationInfo a : pm.getInstalledApplications(0)){
             if(pm.getLaunchIntentForPackage(a.packageName) != null) {
-                trackedApps.put(a.packageName, new TrackedApp(a.loadLabel(pm).toString(), a.packageName, a.loadIcon(pm), 0));
+                apps.put(a.packageName, new TrackedApp(a.loadLabel(pm).toString(), a.packageName, a.loadIcon(pm), 0));
                 if(trackedAppCodes.contains(a.packageName)){
-                    trackedApps.get(a.packageName).setTracked(true);
+                    apps.get(a.packageName).setTracked(true);
                 }
             }
         }
@@ -393,7 +374,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
 
-        for(TrackedApp a : trackedApps.values()){
+        for(TrackedApp a : apps.values()){
             a.setUsageToday(0);
             if(usageStatsMap.get(a.getPackageName()) != null){
                 a.setUsageToday(usageStatsMap.get(a.getPackageName()).getTimeInForeground());
@@ -419,7 +400,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                 String currentApp = appChecker.getForegroundApp(context);
 
 
-                if(trackedApps.get(currentApp).isTracked()){
+                if(apps.get(currentApp).isTracked()){
                     show();
                 } else {
                     hide();
@@ -443,42 +424,76 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         @Override
         public void run() {
-            refreshUsageStats();
+//            refreshUsageStats();
 
             String currentApp = appChecker.getForegroundApp(TrackingService.this);
 
             Log.d("Tracked usage", quotaPercentageUsed() + "");
 
-//            if(!currentApp.equals(lastPkgName)){
-                if(trackedApps.containsKey(currentApp)){
-                    if(Objects.requireNonNull(trackedApps.get(currentApp)).isTracked()){
-                        show();
-//                        overlay.findViewById(R.id.sidebar).getLayoutParams().height = (int) (1920d * quotaPercentageUsed());
-
-                        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
-                        Log.d("TopFade", "" + glowHeight);
-
-//                        ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(topFade, 0, 0, 0);
-                        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
-                        overlay.getRootView().requestLayout();
-
-
-                        Log.d("HEIGHT?", overlay.findViewById(R.id.innerGlow).getLayoutParams().height + " " + ", " + glowHeight);
-//                        overlay.getRootView().requestLayout();
-
-                    } else {
-                        hide();
-                    }
+            if(currentApp.equals(lastPkgName)){
+                if(isTracked(currentApp)){
+                    updateTrackedGlow();
                 } else {
-                    hide();
+                    updateNonTrackedGlow();
                 }
+            } else {
+                if(isTracked(currentApp)){
+                    updateTrackedGlow();
+                }
+            }
 
-                lastPkgName = currentApp;
-//            }
+            mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed() * 100) + "% of your daily allowance.");
+            NotificationManager mNotificationManager =
+            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.notify(1, mBuilder.build());
 
+            lastPkgName = currentApp;
 
-            handler.postDelayed(new tracking(lastPkgName), 1000);
+            handler.postDelayed(new tracking(lastPkgName), interval);
         }
+    }
+
+    private void updateTrackedGlow(){
+        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#FFF000"));
+        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+            }
+        });
+        anim.setDuration(interval);
+        anim.start();
+        overlay.getRootView().requestLayout();
+
+        colourFilterColour = Color.parseColor("#FFF000");
+    }
+
+    private void updateNonTrackedGlow(){
+        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
+        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+            }
+        });
+        anim.setDuration(interval);
+        anim.start();
+        overlay.getRootView().requestLayout();
+
+        colourFilterColour = Color.parseColor("#00000000");
+    }
+
+    private boolean isTracked(String app){
+        if(apps.containsKey(app)){
+            if(Objects.requireNonNull(apps.get(app)).isTracked()){
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -576,7 +591,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     }
 
     public HashMap<String, TrackedApp> getTrackedAppsData(){
-        return trackedApps;
+        return apps;
     }
 
     public ArrayList<String> getTrackedAppsFromPrefs(){
@@ -588,7 +603,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     public void saveTrackedApps(){
         Log.d("Saving preferences:", "here");
         String trackedAppString = "";
-        for(TrackedApp tApp : trackedApps.values()){
+        for(TrackedApp tApp : apps.values()){
             if(tApp.isTracked()){
                 trackedAppString = trackedAppString.concat(tApp.getPackageName() + "@");
             }
@@ -604,7 +619,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         Map<String, AppUsageInfo> usageStatsMap = queryUsageStatistics(this, System.currentTimeMillis() - millis, System.currentTimeMillis());
 
-        for (TrackedApp tApp : trackedApps.values()){
+        for (TrackedApp tApp : apps.values()){
             if(tApp.isTracked()){
                 if(usageStatsMap.get(tApp.getPackageName()) != null){
                     usage += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();
@@ -619,7 +634,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
         long usage = 0;
 
-        for (TrackedApp tApp : trackedApps.values()){
+        for (TrackedApp tApp : apps.values()){
             if(tApp.isTracked()){
                 if(usageStatsMap.get(tApp.getPackageName()) != null){
                     usage += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();

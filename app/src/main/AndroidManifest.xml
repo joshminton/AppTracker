@@ -2,44 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.drawtest"
-android:versionCode="1"
-android:versionName="1.0" >
+    android:versionCode="1"
+    android:versionName="1.0" >
 
-    <application
-        android:label="App Tracker"
-        android:theme="@style/AppTheme">
-    <activity
-        android:name=".MainActivity"
-        android:exported="true" >
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
-
-    <service
-        android:name=".TrackingService"
-        android:permission="android.permission.BIND_JOB_SERVICE"
-        android:enabled="true"
-        android:exported="false" />
-
-    <receiver
-        android:enabled="true"
-        android:exported="true"
-        android:name=".BootUpReceiver"
-        android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
-        <intent-filter>
-            <action android:name="android.intent.action.BOOT_COMPLETED" />
-            <category android:name="android.intent.category.DEFAULT" />
-        </intent-filter>
-    </receiver>
-
-</application>
-
-
-<!--https://stackoverflow.com/a/20920004/3032936-->
-<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!--https://stackoverflow.com/a/20920004/3032936-->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
@@ -47,6 +14,41 @@ android:versionName="1.0" >
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <application
+        android:label="App Tracker"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".TrackingService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:enabled="true"
+            android:exported="true"
+            android:directBootAware="true" />
+
+        <receiver
+            android:name=".BootUpReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+
+            <intent-filter android:directBootAware="true">
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.REBOOT"/>
+            </intent-filter>
+        </receiver>
+
+    </application>
 
 </manifest>
 

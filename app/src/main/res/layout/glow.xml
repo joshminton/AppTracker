@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_centerHorizontal="true"
-            android:src="@drawable/glow"></com.example.drawtest.BottomCropImage>
+            android:src="@drawable/gray_burn"></com.example.drawtest.BottomCropImage>
     </com.bosphere.fadingedgelayout.FadingEdgeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -55,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     RecyclerView lstApps;
     RecyclerView.LayoutManager layoutManager;
     AppsAdapter lstAppsAdapter;
-    HashMap<String, TrackedApp> apps;
 
     OverlayHelper overlayHelper;
 
@@ -107,8 +106,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         overlayHelper.startWatching();
 
         checkPermissions();
-
-        apps = new HashMap<>();
 
 //        finish();
     }
@@ -220,12 +217,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             TrackingService.LocalBinder binder = (TrackingService.LocalBinder) service;
             trackingService = binder.getService();
             bound = true;
-            trackingService.refreshUsageStats();
-            apps.clear();
-            apps.putAll(trackingService.getTrackedAppsData());
-            Log.d("Length", "" + apps.size());
-//            Objects.requireNonNull(lstApps.getAdapter()).notifyDataSetChanged();
-
         }
 
         @Override
