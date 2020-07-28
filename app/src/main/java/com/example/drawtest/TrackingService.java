@@ -38,6 +38,7 @@ import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.rvalerio.fgchecker.AppChecker;
 
 import java.util.ArrayList;
@@ -129,7 +130,15 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         height = displayMetrics.heightPixels;
         width = displayMetrics.widthPixels;
 
+        Log.d("Size: ", height + " " + width);
+
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
+
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().width = width;
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().width = width;
+
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().width = width;
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = height;
 
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
@@ -147,14 +156,14 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         wm.addView(overlay, params);
 
-        topLeftView = new View(this);
-        WindowManager.LayoutParams topLeftParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT);
-        topLeftParams.gravity = Gravity.LEFT | Gravity.TOP;
-        topLeftParams.x = 0;
-        topLeftParams.y = 0;
-        topLeftParams.width = 0;
-        topLeftParams.height = 0;
-        wm.addView(topLeftView, topLeftParams);
+//        topLeftView = new View(this);
+//        WindowManager.LayoutParams topLeftParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT);
+//        topLeftParams.gravity = Gravity.LEFT | Gravity.TOP;
+//        topLeftParams.x = 0;
+//        topLeftParams.y = 0;
+//        topLeftParams.width = 0;
+//        topLeftParams.height = 0;
+//        wm.addView(topLeftView, topLeftParams);
 
         Toast.makeText(this, "Hey!", Toast.LENGTH_SHORT).show();
 
@@ -199,7 +208,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         new Handler().post(new tracking(""));
 
-        show();
+//        show();
 
     }
 
@@ -401,9 +410,9 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
 
                 if(apps.get(currentApp).isTracked()){
-                    show();
+//                    show();
                 } else {
-                    hide();
+//                    hide();
                 }
 
                 handler.postDelayed(this, 10000);
@@ -455,28 +464,39 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     private void updateTrackedGlow(){
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
+        show(overlay.findViewById(R.id.outerGlow));
+//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
-        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#FFF000"));
+        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(Color.parseColor("#ff5500"));
+        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#FF5500"));
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+                ((ImageView) overlay.findViewById(R.id.outerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
         anim.setDuration(interval);
         anim.start();
         overlay.getRootView().requestLayout();
+        Log.d("Color", "New color");
 
-        colourFilterColour = Color.parseColor("#FFF000");
+        colourFilterColour = Color.parseColor("#FF5500");
     }
 
     private void updateNonTrackedGlow(){
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
+        hide(overlay.findViewById(R.id.outerGlow));
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
+//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+        Log.d("New Height", ""+overlay.findViewById(R.id.innerGlow).getLayoutParams().height);
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
+                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
                 ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
@@ -485,6 +505,31 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         overlay.getRootView().requestLayout();
 
         colourFilterColour = Color.parseColor("#00000000");
+    }
+
+    private void hide(final View v){
+        v.setAlpha(1f);
+        v.animate()
+                .alpha(0f)
+                .setDuration(400)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        v.setVisibility(View.GONE);
+                    }
+                });
+        visible = false;
+    }
+
+    private void show(View v){
+        v.setAlpha(0f);
+        v.setVisibility(View.VISIBLE);
+        v.animate()
+                .alpha(1f)
+                .setDuration(400)
+                .setListener(null);
+
+        visible = true;
     }
 
     private boolean isTracked(String app){
@@ -516,8 +561,11 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
             currentEvent = new UsageEvents.Event();
             usageEvents.getNextEvent(currentEvent);
             String packageName = currentEvent.getPackageName();
-            if (currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED || currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED ||
-                    currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_STOPPED) {
+            if (currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED
+                    || currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED
+                    || currentEvent.getEventType() == UsageEvents.Event.ACTIVITY_STOPPED
+                    || currentEvent.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND
+                    || currentEvent.getEventType() == UsageEvents.Event.MOVE_TO_BACKGROUND) {
                 allEvents.add(currentEvent); // an extra event is found, add to all events list.
                 // taking it into a collection to access by package name
                 if (!map.containsKey(packageName)) {
@@ -530,16 +578,15 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         HashMap<String, Long> appEvents = new HashMap<>();
 
-        for (int i = 0; i < allEvents.size() - 1; i++) {
+        for (int i = 0; i < allEvents.size(); i++) {
             UsageEvents.Event event = allEvents.get(i);
-//            if(event.getPackageName().equals("com.android.chrome")){
-//                Log.d("SPOTIFY", String.valueOf(event.getEventType()) + " " + event.getTimeStamp() / 1000 / 60 / 60);
-//            }
-            if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED){
+            if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED
+                || event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND){
                 if(!appEvents.containsKey(event.getPackageName())){
                     appEvents.put(event.getPackageName(), event.getTimeStamp());
                 }
-            } else if (event.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED){
+            } else if (event.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED
+                        || event.getEventType() == UsageEvents.Event.MOVE_TO_BACKGROUND){
                 if(appEvents.containsKey(event.getPackageName())){
                     long diff = event.getTimeStamp() - appEvents.get(event.getPackageName());
 //                    Log.d("EVENT: " , " " + diff);
