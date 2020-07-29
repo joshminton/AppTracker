@@ -18,6 +18,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Binder;
 import android.os.Build;
@@ -27,6 +28,7 @@ import androidx.annotation.RequiresApi;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -76,7 +78,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private int startHour = 00;
     private int startMinute = 00;
 
-    private int dailyQuotaMinutes = 10;
+    private int dailyQuotaMinutes = 120;
 
     private long interval = 2500;
 
@@ -87,7 +89,11 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     private int colourFilterColour;
 
+    private int heavyUseInterval = 15;
+
     private boolean visible;
+
+    private String currentApp;
 
     private final IBinder binder = new LocalBinder();
 
@@ -130,12 +136,21 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         height = displayMetrics.heightPixels;
         width = displayMetrics.widthPixels;
 
+
+        Display display = wm.getDefaultDisplay();
+        Point size = new Point();
+        display.getRealSize(size);
+        height = size.y;
+        width = size.x;
+
         Log.d("Size: ", height + " " + width);
 
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
         overlay.findViewById(R.id.innerGlow).getLayoutParams().width = width;
         overlay.findViewById(R.id.outerGlow).getLayoutParams().width = width;
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = height;
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = height;
 
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().width = width;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = height;
@@ -435,9 +450,10 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         public void run() {
 //            refreshUsageStats();
 
-            String currentApp = appChecker.getForegroundApp(TrackingService.this);
+            currentApp = appChecker.getForegroundApp(TrackingService.this);
 
             Log.d("Tracked usage", quotaPercentageUsed() + "");
+            Log.d("recent percentage ", recentPercentage() + "");
 
             if(currentApp.equals(lastPkgName)){
                 if(isTracked(currentApp)){
@@ -465,11 +481,13 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private void updateTrackedGlow(){
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
         overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-        show(overlay.findViewById(R.id.outerGlow));
-//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
+        show(overlay.findViewById(R.id.outerGlow), recentPercentage());
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
-        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(Color.parseColor("#ff5500"));
-        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#FF5500"));
+
+        int newColor = getColorFromPercentage(recentPercentage());
+//        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
+        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -482,14 +500,14 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         overlay.getRootView().requestLayout();
         Log.d("Color", "New color");
 
-        colourFilterColour = Color.parseColor("#FF5500");
+        colourFilterColour = newColor;
     }
 
     private void updateNonTrackedGlow(){
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
         hide(overlay.findViewById(R.id.outerGlow));
         overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
         Log.d("New Height", ""+overlay.findViewById(R.id.innerGlow).getLayoutParams().height);
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
@@ -511,7 +529,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         v.setAlpha(1f);
         v.animate()
                 .alpha(0f)
-                .setDuration(400)
+                .setDuration(interval)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -521,12 +539,12 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         visible = false;
     }
 
-    private void show(View v){
-        v.setAlpha(0f);
+    private void show(View v, float newAlpha){
+//        v.setAlpha(0f);
         v.setVisibility(View.VISIBLE);
         v.animate()
-                .alpha(1f)
-                .setDuration(400)
+                .alpha(newAlpha)
+                .setDuration(interval)
                 .setListener(null);
 
         visible = true;
@@ -660,6 +678,11 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     }
 
+    private float recentPercentage(){
+        Log.d("Calculation: ", (float) trackedUsageInLast(heavyUseInterval * 60) + " / " + (float) (heavyUseInterval * 60));
+        return (float) trackedUsageInLast(heavyUseInterval * 60) / (float) (heavyUseInterval * 60);
+    }
+
     private long trackedUsageInLast(long seconds){
         long millis = seconds*1000;
         long usage = 0;
@@ -674,7 +697,15 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
             }
         }
 
-        return usage;
+        if(apps.containsKey(currentApp)){
+            if(apps.get(currentApp).isTracked()){
+                if(usage == 0){
+                    usage = seconds * 1000;
+                }
+            }
+        }
+
+        return usage / 1000;
     }
 
     private long trackedUsageThisDaySeconds(){
@@ -697,4 +728,36 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         return Math.min((double) trackedUsageThisDaySeconds() / (dailyQuotaMinutes * 60), 1);
     }
 
+//    //https://stackoverflow.com/a/44327260/3032936
+//    public static Color[] intervalColors(float angleFrom, float angleTo, int n) {
+//        float angleRange = angleTo - angleFrom;
+//        float stepAngle = angleRange / n;
+//
+//        Color[] colors = new Color[n];
+//        for (int i = 0; i < n; i++) {
+//            float angle = angleFrom + i*stepAngle;
+//            colors[i] = Color.HSVToColor(angle, 1.0, 1.0);
+//            Color.H
+//        }
+//        return colors;
+//    }
+//
+    private int getColorFromPercentage(float percentage){
+        float max = 0f;
+        float min = 60f;
+
+        float rangeSize = Math.abs(max-min);
+
+        float hue = min - (rangeSize * percentage);
+        float sat = percentage;
+
+        return Color.HSVToColor(new float[]{hue, 1.0f, 1.0f});
+
+
+
+    }
 }
+
+
+
+
