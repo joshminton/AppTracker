@@ -1,5 +1,6 @@
 package com.example.drawtest;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -8,11 +9,15 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -84,8 +89,8 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        FloatingActionButton refreshBtn = getActivity().findViewById(R.id.refresh);
-        refreshBtn.setOnClickListener(this);
+//        FloatingActionButton refreshBtn = getActivity().findViewById(R.id.refresh);
+//        refreshBtn.setOnClickListener(this);
 
         lstApps = (RecyclerView) getView().findViewById(R.id.lstApps);
         layoutManager = new LinearLayoutManager(getContext());
@@ -95,11 +100,22 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
 
         trackingService = ((MainActivity) getActivity()).getTrackingService();
 
-        lstAppsAdapter = new AppsAdapter(apps, trackingService);
+        lstAppsAdapter = new AppsAdapter(apps, trackingService, this);
         lstApps.setAdapter(lstAppsAdapter);
 
         onClickRefresh();
 
+    }
+
+    protected void updateUsage(){
+        TextView txtWeekUsage = getActivity().findViewById(R.id.txtWeekUsage);
+        String useMessage = TimeConverter.millsToHoursMinutesSecondsVerbose(trackingService.trackedAppsAverageUsageLastWeek());
+
+        String startText = "You've used these apps an average of ";
+        String endText = " in the last week.";
+        SpannableString str = new SpannableString(startText + useMessage + endText);
+        str.setSpan(new StyleSpan(Typeface.BOLD), startText.length(), startText.length() + useMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        txtWeekUsage.setText(str);
     }
 
     public void onClickRefresh(){
@@ -117,9 +133,9 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.refresh:
-                onClickRefresh();
-                break;
+//            case R.id.refresh:
+//                onClickRefresh();
+//                break;
         }
     }
 

@@ -10,6 +10,7 @@ public class TrackedApp {
     private long googleUsageToday;
     private long usageToday;
     private boolean isTracked;
+    private double avgUsageLastWeek;
 
     public TrackedApp(String name, String packageName, Drawable icon) {
         this.name = name;
@@ -84,5 +85,13 @@ public class TrackedApp {
 
     public void setTracked(boolean tracked) {
         isTracked = tracked;
+    }
+
+    public double getAvgUsageLastWeek() {
+        return avgUsageLastWeek;
+    }
+
+    public void setAvgUsageLastWeek(double avgUsageLastWeek) {
+        this.avgUsageLastWeek = avgUsageLastWeek;
     }
 }

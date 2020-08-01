@@ -9,6 +9,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.app.usage.UsageEvents;
+import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
@@ -16,31 +17,26 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
-import android.graphics.drawable.ShapeDrawable;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.RequiresApi;
+import androidx.core.graphics.ColorUtils;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.rvalerio.fgchecker.AppChecker;
 
 import java.util.ArrayList;
@@ -57,7 +53,7 @@ import java.util.Objects;
 //https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
 //https://proandroiddev.com/bound-and-foreground-services-in-android-a-step-by-step-guide-5f8362f4ae20
 
-public class TrackingService extends Service implements OnTouchListener, OnClickListener {
+public class TrackingService extends Service {
 
     private View topLeftView;
 
@@ -75,8 +71,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     private android.app.Notification notification;
     private Notification.Builder mBuilder;
 
-    private int startHour = 00;
-    private int startMinute = 00;
+    private int startHour = 05;
+    private int startMinute = 30;
 
     private int dailyQuotaMinutes = 120;
 
@@ -89,7 +85,7 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 15;
+    private int heavyUseInterval = 1;
 
     private boolean visible;
 
@@ -219,9 +215,14 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
         refreshUsageStats();
 
+        setAverageUsageLastWeek();
+
+        Log.d("Average use per day of tracked apps last week:", "" + TimeConverter.millsToHoursMinutesSecondsVerbose(trackedAppsAverageUsageLastWeek()));
+
+
 //        runTracking(this);
 
-        new Handler().post(new tracking(""));
+        new Handler().post(new tracking("none"));
 
 //        show();
 
@@ -251,71 +252,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         Log.d("HEY", "----------------------");
     }
 
-
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-//        Toast.makeText(this, "Overlay button click event", Toast.LENGTH_SHORT).show();
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            float x = event.getRawX();
-            float y = event.getRawY();
-
-            moving = false;
-
-            int[] location = new int[2];
-            overlay.getLocationOnScreen(location);
-
-            originalXPos = location[0];
-            originalYPos = location[1];
-
-            offsetX = originalXPos - x;
-            offsetY = originalYPos - y;
-
-        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            int[] topLeftLocationOnScreen = new int[2];
-            topLeftView.getLocationOnScreen(topLeftLocationOnScreen);
-
-            System.out.println("topLeftY="+topLeftLocationOnScreen[1]);
-            System.out.println("originalY="+originalYPos);
-
-            float x = event.getRawX();
-            float y = event.getRawY();
-
-            WindowManager.LayoutParams params = (LayoutParams) overlay.getLayoutParams();
-
-            int newX = (int) (offsetX + x);
-            int newY = (int) (offsetY + y);
-
-            if (Math.abs(newX - originalXPos) < 1 && Math.abs(newY - originalYPos) < 1 && !moving) {
-                return false;
-            }
-
-            params.x = newX - (topLeftLocationOnScreen[0]);
-            params.y = newY - (topLeftLocationOnScreen[1]);
-
-            wm.updateViewLayout(overlay, params);
-            moving = true;
-        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            if (moving) {
-                return true;
-            }
-        }
-
-//        overlayedButton.setWidth(overlayedButton.getWidth() + 1);
-
-        return false;
-    }
-
-    @Override
-    public void onClick(View v) {
-//        Toast.makeText(this, "Overlay button click event", Toast.LENGTH_SHORT).show();
-    }
-
-    public void makeBlue() {
-        ShapeDrawable shapeDrawable = (ShapeDrawable) overlay.getBackground();
-
-        shapeDrawable.getPaint().setColor(Color.BLUE);
-    }
 
     public void toggle(){
         if(visible){
@@ -369,8 +305,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     }
 
     public Map<String, AppUsageInfo> getUsageInfoThisDay(){
-        UsageStatsManager mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-
         GregorianCalendar cal = new GregorianCalendar();
         GregorianCalendar startCal;
         if((cal.get(Calendar.HOUR_OF_DAY) < startHour) || ((cal.get(Calendar.HOUR_OF_DAY) == startHour) && (cal.get(Calendar.MINUTE) < startMinute))){
@@ -396,6 +330,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
     public void refreshUsageStats(){
 
+        Log.d("Refreshing!", " ");
+
         Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
 
         for(TrackedApp a : apps.values()){
@@ -404,6 +340,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
                 a.setUsageToday(usageStatsMap.get(a.getPackageName()).getTimeInForeground());
             }
         }
+
+        setAverageUsageLastWeek();
     }
 
     public void runTracking(final Context context){
@@ -452,8 +390,17 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
 
             currentApp = appChecker.getForegroundApp(TrackingService.this);
 
-            Log.d("Tracked usage", quotaPercentageUsed() + "");
-            Log.d("recent percentage ", recentPercentage() + "");
+//            Log.d("Tracked usage", quotaPercentageUsed() + "");
+//            Log.d("recent percentage ", recentPercentage() + "");
+
+
+            if(lastPkgName == null){
+                lastPkgName = "none";
+            }
+
+//            if(currentApp == null){
+//                currentApp
+//            }
 
             if(currentApp.equals(lastPkgName)){
                 if(isTracked(currentApp)){
@@ -479,13 +426,15 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
     }
 
     private void updateTrackedGlow(){
+        float recentPercentage = recentPercentage();
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
         overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-        show(overlay.findViewById(R.id.outerGlow), recentPercentage());
+        show(overlay.findViewById(R.id.outerGlow), recentPercentage);
         overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
 
-        int newColor = getColorFromPercentage(recentPercentage());
+        int newColor = getColorFromPercentage(recentPercentage);
+
 //        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -631,27 +580,6 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
             Objects.requireNonNull(map.get(packageName)).timeInForeground += diff;
         }
 
-        // iterate through all events.
-//        for (int i = 0; i < allEvents.size() - 1; i++) {
-//            UsageEvents.Event event0 = allEvents.get(i);
-//            UsageEvents.Event event1 = allEvents.get(i + 1);
-//
-//            Log.d("Events:", event0.getPackageName() + " " + event0.getEventType() + " " + event0.getTimeStamp() / 1000);
-//            //for launchCount of apps in time range
-//            if (!event0.getPackageName().equals(event1.getPackageName()) && event1.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED) {
-//                // if true, E1 (launch event of an app) app launched
-//                Objects.requireNonNull(map.get(event1.getPackageName())).launchCount++;
-//            }
-//
-//            //for UsageTime of apps in time range
-//            if (event0.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED &&
-//                    (event1.getEventType() == UsageEvents.Event.ACTIVITY_PAUSED || event1.getEventType() == UsageEvents.Event.ACTIVITY_STOPPED)
-//                    && event0.getPackageName().equals(event1.getPackageName())) {
-//                long diff = event1.getTimeStamp() - event0.getTimeStamp();
-//                Objects.requireNonNull(map.get(event0.getPackageName())).timeInForeground += diff;
-//            }
-//        }
-        // and return the map.
         return map;
     }
 
@@ -723,25 +651,54 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         return usage / 1000;
     }
 
-    private double quotaPercentageUsed(){
-        Log.d("Tracked usage this day minutes ", "" + trackedUsageThisDaySeconds());
-        return Math.min((double) trackedUsageThisDaySeconds() / (dailyQuotaMinutes * 60), 1);
+    private void setAverageUsageLastWeek(){
+
+        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+
+        List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, System.currentTimeMillis() - 604800000, System.currentTimeMillis());
+
+        HashMap<String, ArrayList<Long>> packageUsages = new HashMap<>();
+
+        for(UsageStats u : usageStatsList){
+            if(!packageUsages.containsKey(u.getPackageName())) {
+                packageUsages.put(u.getPackageName(), new ArrayList());
+            }
+            packageUsages.get(u.getPackageName()).add(u.getTotalTimeInForeground());
+        }
+
+        for(Map.Entry<String, ArrayList<Long>> p : packageUsages.entrySet()){
+            if(apps.containsKey(p.getKey())){
+                int i = 0;
+                double tot = 0;
+                for(long t : p.getValue()){
+                    tot += t;
+                    i++;
+                }
+                apps.get(p.getKey()).setAvgUsageLastWeek(tot / i);
+            }
+        }
+
+        for(TrackedApp tApp : apps.values()){
+            Log.d(".", tApp.getPackageName() + " " + tApp.getAvgUsageLastWeek()/1000/60);
+        }
     }
 
-//    //https://stackoverflow.com/a/44327260/3032936
-//    public static Color[] intervalColors(float angleFrom, float angleTo, int n) {
-//        float angleRange = angleTo - angleFrom;
-//        float stepAngle = angleRange / n;
-//
-//        Color[] colors = new Color[n];
-//        for (int i = 0; i < n; i++) {
-//            float angle = angleFrom + i*stepAngle;
-//            colors[i] = Color.HSVToColor(angle, 1.0, 1.0);
-//            Color.H
-//        }
-//        return colors;
-//    }
-//
+    public long trackedAppsAverageUsageLastWeek(){
+        long tot = 0;
+        for (TrackedApp tApp : apps.values()){
+            if(tApp.isTracked()){
+                tot += tApp.getAvgUsageLastWeek();
+            }
+        }
+        return tot;
+    }
+
+    private double quotaPercentageUsed(){
+        long trackedUsageThisDaySeconds = trackedUsageThisDaySeconds();
+        Log.d("Tracked usage this day minutes ", "" + trackedUsageThisDaySeconds);
+        return Math.min((double) trackedUsageThisDaySeconds / (dailyQuotaMinutes * 60), 1);
+    }
+
     private int getColorFromPercentage(float percentage){
         float max = 0f;
         float min = 60f;
@@ -749,12 +706,8 @@ public class TrackingService extends Service implements OnTouchListener, OnClick
         float rangeSize = Math.abs(max-min);
 
         float hue = min - (rangeSize * percentage);
-        float sat = percentage;
 
-        return Color.HSVToColor(new float[]{hue, 1.0f, 1.0f});
-
-
-
+        return ColorUtils.setAlphaComponent(Color.HSVToColor(new float[]{hue, 1.0f, 1.0f}), (int) (255 * percentage));
     }
 }
 

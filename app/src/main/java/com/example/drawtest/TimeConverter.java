@@ -14,6 +14,11 @@ public class TimeConverter {
     }
 
     public static String millsToHoursMinutesSecondsVerbose(long mills){
+
+        if(mills < 60000){
+            return "less than a minute";
+        }
+
         double hours = Math.floor(mills/1000/60/60);
         mills -= hours * 60 * 60 * 1000;
         double minutes = Math.floor(mills/1000/60);

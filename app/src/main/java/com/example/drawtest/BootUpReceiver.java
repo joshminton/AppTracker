@@ -18,10 +18,6 @@ public class BootUpReceiver extends BroadcastReceiver{
 
         Toast.makeText(context, "ON BOOT", Toast.LENGTH_LONG);
 
-        /***** For start Service  ****/
-        Intent startServiceIntent = new Intent(context, TrackingService.class);
-        context.startService(startServiceIntent);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(new Intent(context,TrackingService.class));
         } else {

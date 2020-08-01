@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> {
     private HashMap<String, TrackedApp> listApps;
     private TrackingService trackingService;
+    private AppsFragment appsFragment;
     ArrayList<TrackedApp> arrayListApps;
 
     // Provide a reference to the views for each data item
@@ -70,14 +71,16 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
             }
             Log.d("YEEEE", "HAAAAA");
             trackingService.saveTrackedApps();
+            appsFragment.updateUsage();
         }
 
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public AppsAdapter(HashMap<String, TrackedApp> listApps, TrackingService trackingService) {
+    public AppsAdapter(HashMap<String, TrackedApp> listApps, TrackingService trackingService, AppsFragment appsFragment) {
         this.listApps = listApps;
         this.trackingService = trackingService;
+        this.appsFragment = appsFragment;
     }
 
     // Create new views (invoked by the layout manager)
@@ -102,7 +105,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
         Collections.sort(arrayListApps, new TrackedAppComparator());
 
         holder.appName.setText(arrayListApps.get(position).getName());
-        holder.appCode.setText(TimeConverter.millsToHoursMinutesSecondsVerbose(arrayListApps.get(position).getUsageToday()) + " (" + (arrayListApps.get(position).getUsageToday() / 1000) + "s)");
+        holder.appCode.setText("Used " + TimeConverter.millsToHoursMinutesSecondsVerbose((long) arrayListApps.get(position).getAvgUsageLastWeek()) + " per day");
 
         holder.icon.setImageDrawable(arrayListApps.get(position).getIcon());
 
