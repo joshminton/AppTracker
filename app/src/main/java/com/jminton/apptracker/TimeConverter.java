@@ -1,4 +1,4 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 public class TimeConverter {
     public static String millsToHoursMinutesSeconds(long mills){
@@ -25,6 +25,21 @@ public class TimeConverter {
         mills -= minutes * 60 * 1000;
         double seconds = Math.floor(mills/1000);
         mills -= seconds * 1000;
+
+        String hourString;
+        String minuteString;
+
+        if(hours > 1) {
+            hourString = " hours ";
+        } else {
+            hourString = " hour ";
+        }
+
+        if(minutes > 1) {
+            minuteString = " minutes ";
+        } else {
+            minuteString = " minute ";
+        }
 
         return ((hours != 0) ? (int) hours +" hours " : "") + ((minutes < 10) ? "0" : "") + (int) minutes+" minutes";
 

@@ -1,4 +1,4 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -16,10 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -112,7 +109,7 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
         String useMessage = TimeConverter.millsToHoursMinutesSecondsVerbose(trackingService.trackedAppsAverageUsageLastWeek());
 
         String startText = "You've used these apps an average of ";
-        String endText = " in the last week.";
+        String endText = " a day in total in the last week.";
         SpannableString str = new SpannableString(startText + useMessage + endText);
         str.setSpan(new StyleSpan(Typeface.BOLD), startText.length(), startText.length() + useMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         txtWeekUsage.setText(str);

@@ -1,15 +1,12 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 //https://gist.github.com/arriolac/3843346
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.util.AttributeSet;
-import android.widget.ImageView;
 
 /**
  * Created by chris on 7/27/16.
@@ -50,7 +47,7 @@ public class BottomCropImage extends androidx.appcompat.widget.AppCompatImageVie
     }
 
     private void init() {
-        setScaleType(ScaleType.MATRIX);
+        setScaleType(ScaleType.FIT_END);
     }
 
     private void recomputeImgMatrix() {

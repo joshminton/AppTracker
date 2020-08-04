@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.drawtest"
+    package="com.jminton.apptracker"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -18,7 +18,7 @@
         android:label="App Tracker"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name="com.jminton.apptracker.MainActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,14 +28,14 @@
         </activity>
 
         <service
-            android:name=".TrackingService"
+            android:name="com.jminton.apptracker.TrackingService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:enabled="true"
             android:exported="true"
             android:directBootAware="true" />
 
         <receiver
-            android:name=".BootUpReceiver"
+            android:name="com.jminton.apptracker.BootUpReceiver"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">

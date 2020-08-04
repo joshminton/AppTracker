@@ -1,4 +1,4 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -1,6 +1,5 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
-import androidx.room.Database;
 import androidx.room.RoomDatabase;
 
 //@Database(entities = {TrackedApp.class}, version = 1)

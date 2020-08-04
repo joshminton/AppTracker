@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "991512819221",
+    "firebase_url": "https://apptracker-fdd16.firebaseio.com",
+    "project_id": "apptracker-fdd16",
+    "storage_bucket": "apptracker-fdd16.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991512819221:android:87f549f38df11c80fd001c",
+        "android_client_info": {
+          "package_name": "com.jminton.apptracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "991512819221-34ob6fh1lnnga07gbd7g40drklliefdf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZhhHF2N39Y5h2Uhq9JrjMzNgWa5PEpWo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "991512819221-34ob6fh1lnnga07gbd7g40drklliefdf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

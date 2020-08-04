@@ -1,8 +1,4 @@
-package com.example.drawtest;
-
-import java.util.List;
-
-import androidx.room.*;
+package com.jminton.apptracker;
 
 public interface TrackedAppDao {
 

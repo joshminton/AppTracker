@@ -1,8 +1,7 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
-import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,6 +9,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -20,10 +20,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
@@ -33,12 +31,14 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.adriangl.overlayhelper.OverlayHelper;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.io.File;
 
 //https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
 //https://fabcirablog.weebly.com/blog/creating-a-never-ending-background-service-in-android
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
     HomeFragment homeFrag = new HomeFragment();
     AppsFragment appsFrag = new AppsFragment();
-    SettingsFragment settingsFrag = new SettingsFragment();
+    LimitsFragment limitsFrag = new LimitsFragment();
 
     FragmentManager fm = getSupportFragmentManager();
 
@@ -123,6 +123,11 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             startForegroundService(svc);
             bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
+
+        if(trackingService != null){
+            trackingService.saveAppsAverageUsageLastTwoWeeks();
+        }
+
     }
 
 
@@ -134,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
                 fT.replace(R.id.frag_frame, homeFrag);
                 break;
             case R.id.settings:
-                fT.replace(R.id.frag_frame, settingsFrag);
+                fT.replace(R.id.frag_frame, limitsFrag);
                 break;
             case R.id.apps:
                 fT.replace(R.id.frag_frame, appsFrag);
@@ -174,10 +179,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         if(usageAccess & drawAccess){
             advanceWithService();
         }
-    }
-
-    private boolean isSystemPackage(PackageInfo pkgInfo) {
-        return (pkgInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
     }
 
     @Override
@@ -284,4 +285,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     public TrackingService getTrackingService(){
         return trackingService;
     }
+
+
 }

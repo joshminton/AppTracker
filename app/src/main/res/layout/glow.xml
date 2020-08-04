@@ -12,11 +12,11 @@
         android:layout_alignParentBottom="true"
         android:layout_gravity="bottom"
         app:fel_edge="top"
-        app:fel_size_top="200dp"
+        app:fel_size_top="100dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <com.example.drawtest.BottomCropImage
+        <com.jminton.apptracker.BottomCropImage
             android:id="@+id/innerGlow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -24,8 +24,8 @@
             android:scaleType="fitXY"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
-        </com.example.drawtest.BottomCropImage>
-            <com.example.drawtest.BottomCropImage
+        </com.jminton.apptracker.BottomCropImage>
+            <com.jminton.apptracker.BottomCropImage
                 android:id="@+id/outerGlow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -33,7 +33,7 @@
                 android:scaleType="fitXY"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent">
-            </com.example.drawtest.BottomCropImage>
+            </com.jminton.apptracker.BottomCropImage>
     </com.bosphere.fadingedgelayout.FadingEdgeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
 

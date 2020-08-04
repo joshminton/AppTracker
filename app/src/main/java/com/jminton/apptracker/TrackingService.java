@@ -1,4 +1,4 @@
-package com.example.drawtest;
+package com.jminton.apptracker;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -16,17 +16,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 
-import android.util.DisplayMetrics;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
@@ -37,12 +41,23 @@ import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.rvalerio.fgchecker.AppChecker;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +89,7 @@ public class TrackingService extends Service {
     private int startHour = 05;
     private int startMinute = 30;
 
-    private int dailyQuotaMinutes = 120;
+    private int dailyQuotaMinutes = 30;
 
     private long interval = 2500;
 
@@ -85,11 +100,16 @@ public class TrackingService extends Service {
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 1;
+    private int heavyUseInterval = 5;
+
+    private int LAYOUT_FLAG;
 
     private boolean visible;
 
+    private AppChecker appChecker = new AppChecker();
     private String currentApp;
+
+    private String lastSavedDate;
 
     private final IBinder binder = new LocalBinder();
 
@@ -111,13 +131,10 @@ public class TrackingService extends Service {
     public void onCreate() {
         super.onCreate();
 
-
-
 //        db = Room.databaseBuilder(getApplicationContext(), TrackedAppDatabase.class, "tracked-apps").allowMainThreadQueries().build();
-        sharedPref = getSharedPreferences("tracked-apps", Context.MODE_PRIVATE);
+        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         trackedAppCodes = getTrackedAppsFromPrefs();
-
-        int LAYOUT_FLAG;
+        loadSavedQuota();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
@@ -127,45 +144,8 @@ public class TrackingService extends Service {
 
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        wm.getDefaultDisplay().getMetrics(displayMetrics);
-        height = displayMetrics.heightPixels;
-        width = displayMetrics.widthPixels;
 
-
-        Display display = wm.getDefaultDisplay();
-        Point size = new Point();
-        display.getRealSize(size);
-        height = size.y;
-        width = size.x;
-
-        Log.d("Size: ", height + " " + width);
-
-        overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
-
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().width = width;
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().width = width;
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = height;
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = height;
-
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().width = width;
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = height;
-
-        WindowManager.LayoutParams params = new LayoutParams(width,
-                height,
-                LAYOUT_FLAG,
-                LayoutParams.FLAG_NOT_FOCUSABLE
-                        | LayoutParams.FLAG_NOT_TOUCH_MODAL
-                        | LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                        | LayoutParams.FLAG_NOT_TOUCHABLE
-                        | LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.LEFT | Gravity.TOP;
-        params.x = 0;
-        params.y = 0;
-
-        wm.addView(overlay, params);
+        initOverlay();
 
 //        topLeftView = new View(this);
 //        WindowManager.LayoutParams topLeftParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT);
@@ -217,12 +197,23 @@ public class TrackingService extends Service {
 
         setAverageUsageLastWeek();
 
-        Log.d("Average use per day of tracked apps last week:", "" + TimeConverter.millsToHoursMinutesSecondsVerbose(trackedAppsAverageUsageLastWeek()));
+        lastSavedDate = sharedPref.getString("dateLastSaved", "never");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+        Date todayDate = Calendar.getInstance().getTime();
+        String todayString = formatter.format(todayDate);
 
+        Log.d("Last saved date", lastSavedDate + "");
 
-//        runTracking(this);
+        if(!lastSavedDate.equals(todayString)){
+            saveAppsAverageUsageLastTwoWeeks();
+        }
 
-        new Handler().post(new tracking("none"));
+        new Handler().post(new tracking());
+
+        updateOverlay("none");
+
+        show(overlay.findViewById(R.id.innerGlow), 1f);
+
 
 //        show();
 
@@ -245,12 +236,67 @@ public class TrackingService extends Service {
         super.onDestroy();
         if (overlay != null) {
             wm.removeView(overlay);
-            wm.removeView(topLeftView);
             overlay = null;
-            topLeftView = null;
         }
         Log.d("HEY", "----------------------");
     }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        initOverlay();
+
+        updateOverlay("none");
+
+        // Checks the orientation of the screen
+//        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+//        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+//            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+//        }
+    }
+
+    private void initOverlay(){
+
+        if(overlay != null){
+            wm.removeView(overlay);
+        }
+
+        Display display = wm.getDefaultDisplay();
+        Point size = new Point();
+        display.getRealSize(size);
+        height = size.y;
+        width = size.x;
+
+        overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
+
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().width = width;
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().width = width;
+        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = height;
+        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = height;
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().width = width;
+        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = height;
+        overlay.findViewById(R.id.innerGlow).setAlpha(0f);
+        overlay.findViewById(R.id.outerGlow).setAlpha(0f);
+
+        WindowManager.LayoutParams params = new LayoutParams(width,
+                height,
+                LAYOUT_FLAG,
+                LayoutParams.FLAG_NOT_FOCUSABLE
+                        | LayoutParams.FLAG_NOT_TOUCH_MODAL
+                        | LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                        | LayoutParams.FLAG_NOT_TOUCHABLE
+                        | LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.LEFT | Gravity.TOP;
+        params.x = 0;
+        params.y = 0;
+
+        wm.addView(overlay, params);
+    }
+
 
 
     public void toggle(){
@@ -375,55 +421,70 @@ public class TrackingService extends Service {
 
     public class tracking implements Runnable {
         private String lastPkgName;
-        public tracking(String lastPkgName) {
-            this.lastPkgName = lastPkgName;
-        }
 
         //https://stackoverflow.com/questions/3873659/android-how-can-i-get-the-current-foreground-activity-from-a-service/27642535
         final Handler handler = new Handler();
-
-        final AppChecker appChecker = new AppChecker();
 
         @Override
         public void run() {
 //            refreshUsageStats();
 
-            currentApp = appChecker.getForegroundApp(TrackingService.this);
+            try {
+                lastPkgName = updateOverlay(lastPkgName);
+            } catch (NullPointerException e){
+                lastPkgName = "none";
+            }
+
+            if(!lastSavedDate.equals(getDateString())){
+                Log.d("SAVING", "SAVING");
+                saveAppsAverageUsageLastTwoWeeks();
+            } else {
+                Log.d("NOTTTT", "SAVVVVIIIINNNNGGG");
+            }
+
+            handler.postDelayed(this, interval);
+        }
+    }
+
+    private String updateOverlay(String lastPkgName){
+        //            getScreenState?
+
+        currentApp = appChecker.getForegroundApp(TrackingService.this);
 
 //            Log.d("Tracked usage", quotaPercentageUsed() + "");
 //            Log.d("recent percentage ", recentPercentage() + "");
 
 
-            if(lastPkgName == null){
-                lastPkgName = "none";
-            }
+        if(lastPkgName == null){
+            lastPkgName = "none";
+        }
+
+        Log.d("Hmmmm", "lastPkgName = " + lastPkgName + ", currentApp = " + currentApp);
 
 //            if(currentApp == null){
 //                currentApp
 //            }
 
-            if(currentApp.equals(lastPkgName)){
-                if(isTracked(currentApp)){
-                    updateTrackedGlow();
-                } else {
-                    updateNonTrackedGlow();
-                }
+        if(currentApp.equals(lastPkgName)){
+            if(isTracked(currentApp)){
+                updateTrackedGlow();
             } else {
-                if(isTracked(currentApp)){
-                    updateTrackedGlow();
-                }
+                updateNonTrackedGlow();
             }
-
-            mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed() * 100) + "% of your daily allowance.");
-            NotificationManager mNotificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.notify(1, mBuilder.build());
-
-            lastPkgName = currentApp;
-
-            handler.postDelayed(new tracking(lastPkgName), interval);
+        } else {
+            if(isTracked(currentApp)){
+                updateTrackedGlow();
+            }
         }
+
+        mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed() * 100) + "% of your daily allowance.");
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(1, mBuilder.build());
+
+        return currentApp;
     }
+
 
     private void updateTrackedGlow(){
         float recentPercentage = recentPercentage();
@@ -432,6 +493,7 @@ public class TrackingService extends Service {
         show(overlay.findViewById(R.id.outerGlow), recentPercentage);
         overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+
 
         int newColor = getColorFromPercentage(recentPercentage);
 
@@ -475,7 +537,7 @@ public class TrackingService extends Service {
     }
 
     private void hide(final View v){
-        v.setAlpha(1f);
+//        v.setAlpha(1f);
         v.animate()
                 .alpha(0f)
                 .setDuration(interval)
@@ -677,10 +739,6 @@ public class TrackingService extends Service {
                 apps.get(p.getKey()).setAvgUsageLastWeek(tot / i);
             }
         }
-
-        for(TrackedApp tApp : apps.values()){
-            Log.d(".", tApp.getPackageName() + " " + tApp.getAvgUsageLastWeek()/1000/60);
-        }
     }
 
     public long trackedAppsAverageUsageLastWeek(){
@@ -693,9 +751,70 @@ public class TrackingService extends Service {
         return tot;
     }
 
+    public void saveAppsAverageUsageLastTwoWeeks(){
+
+        Toast.makeText(this, "Here", Toast.LENGTH_SHORT).show();
+
+        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+
+        List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, System.currentTimeMillis() - (604800000 * 2), System.currentTimeMillis());
+
+        HashMap<String, ArrayList<Long>> packageUsages = new HashMap<>();
+
+        String text = "";
+
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+
+        for(UsageStats u : usageStatsList){
+            String dateString = formatter.format(new Date(u.getFirstTimeStamp()));
+
+            String name;
+            String tracked;
+
+            if(apps.containsKey(u.getPackageName())){
+                name = apps.get(u.getPackageName()).getName();
+                tracked = Boolean.toString(apps.get(u.getPackageName()).isTracked());
+            } else {
+                name = u.getPackageName();
+                tracked = "false";
+            }
+
+            text = text.concat(dateString + "," + u.getPackageName() + "," + name + "," + u.getTotalTimeInForeground() + "," + tracked + "\n");
+        }
+
+
+        Date todayDate = Calendar.getInstance().getTime();
+        String todayString = formatter.format(todayDate);
+
+        String fileName = todayString + "_usage.csv";
+
+        FileOutputStream fos = null;
+
+        try {
+            fos = openFileOutput(fileName, MODE_PRIVATE);
+            fos.write(text.getBytes());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null){
+                try {
+                    fos.close();
+                } catch (IOException e){
+                    e.printStackTrace();;
+                }
+            }
+        }
+
+        sharedPref.edit().putString("dateLastSaved", todayString).apply();
+        lastSavedDate = todayString;
+
+        uploadUsage(fileName);
+    }
+
     private double quotaPercentageUsed(){
         long trackedUsageThisDaySeconds = trackedUsageThisDaySeconds();
-        Log.d("Tracked usage this day minutes ", "" + trackedUsageThisDaySeconds);
         return Math.min((double) trackedUsageThisDaySeconds / (dailyQuotaMinutes * 60), 1);
     }
 
@@ -709,6 +828,58 @@ public class TrackingService extends Service {
 
         return ColorUtils.setAlphaComponent(Color.HSVToColor(new float[]{hue, 1.0f, 1.0f}), (int) (255 * percentage));
     }
+
+    public void setQuota(long mills){
+        sharedPref.edit().putLong("quota", mills).apply();
+        loadSavedQuota();
+    }
+
+    public int getQuota(){
+        return dailyQuotaMinutes;
+    }
+
+    private void loadSavedQuota(){
+        dailyQuotaMinutes = (int) sharedPref.getLong("quota", 0) / 1000 / 60;
+        Log.d("debug", dailyQuotaMinutes + " ");
+    }
+
+    private void uploadUsage(String filename){
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+
+        String id = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+
+        Log.d("TRYING", id + " Trying to upload.");
+
+        Uri file = Uri.fromFile(new File(getFilesDir() + "/" + filename));
+        StorageReference riversRef = storageRef.child("usage/" + id + "/" + file.getLastPathSegment());
+        UploadTask uploadTask = riversRef.putFile(file);
+
+        Log.d("FAILURE?", "FAILURE?");
+
+        // Register observers to listen for when the download is done or if it fails
+        uploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                Log.d("FAILURE", "FAILURE");
+            }
+        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Log.d("SUCCESS", "SUCCESS");
+                // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
+                // ...
+            }
+        });
+
+    }
+
+    private String getDateString(){
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+        Date todayDate = Calendar.getInstance().getTime();
+        return formatter.format(todayDate);
+    }
+
 }
 
 
