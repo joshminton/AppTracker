@@ -147,18 +147,6 @@ public class TrackingService extends Service {
 
         initOverlay();
 
-//        topLeftView = new View(this);
-//        WindowManager.LayoutParams topLeftParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT);
-//        topLeftParams.gravity = Gravity.LEFT | Gravity.TOP;
-//        topLeftParams.x = 0;
-//        topLeftParams.y = 0;
-//        topLeftParams.width = 0;
-//        topLeftParams.height = 0;
-//        wm.addView(topLeftView, topLeftParams);
-
-        Toast.makeText(this, "Hey!", Toast.LENGTH_SHORT).show();
-
-
         String NOTIFICATION_CHANNEL_ID = "new_chan2";
         NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "Overlay Channel", NotificationManager.IMPORTANCE_LOW);
         chan.setSound(null, null);
@@ -178,7 +166,7 @@ public class TrackingService extends Service {
         notification =  mBuilder
                 .setContentTitle("Tracking your usage.")
 //                .setContentText("Currently used " + (int) (quotaPercentageUsed() * 100) + "%")
-                .setSmallIcon(R.drawable.psychology_24px)
+                .setSmallIcon(R.drawable.ic_baseline_phone_android_24)
                 .setContentIntent(pendingIntent)
                 .setTicker("Oi oi!")
                 .setColorized(true)
@@ -214,9 +202,6 @@ public class TrackingService extends Service {
 
         show(overlay.findViewById(R.id.innerGlow), 1f);
 
-
-//        show();
-
     }
 
 
@@ -226,8 +211,18 @@ public class TrackingService extends Service {
 
         Log.d(this.getPackageName(), "hey");
 
-        // If we get killed, after returning from here, restart
-        return START_STICKY;
+        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
+
+        if (intent.getBooleanExtra("crash", false)) {
+            Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
+
+            Log.d("Restart after", "CRASSSSSHHHHHHHHHHHHHHHHHHH");
+        }
+
+//        // If we get killed, after returning from here, restart
+//        return START_STICKY;
+
+        return android.app.Service.START_REDELIVER_INTENT;
     }
 
 
@@ -238,6 +233,10 @@ public class TrackingService extends Service {
             wm.removeView(overlay);
             overlay = null;
         }
+
+        Intent restartIntent = new Intent(this, RestartReceiver.class);
+        this.sendBroadcast(restartIntent);
+
         Log.d("HEY", "----------------------");
     }
 
@@ -512,6 +511,9 @@ public class TrackingService extends Service {
         Log.d("Color", "New color");
 
         colourFilterColour = newColor;
+
+        int n = 1/0;
+
     }
 
     private void updateNonTrackedGlow(){

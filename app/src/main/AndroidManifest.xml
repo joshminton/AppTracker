@@ -16,7 +16,8 @@
 
     <application
         android:label="App Tracker"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:icon="@mipmap/ic_launcher">
         <activity
             android:name="com.jminton.apptracker.MainActivity"
             android:exported="true" >
@@ -47,6 +48,11 @@
                 <action android:name="android.intent.action.REBOOT"/>
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name="RestartReceiver"
+            android:enabled="true"
+            android:exported="true" />
 
     </application>
 
