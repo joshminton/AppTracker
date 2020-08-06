@@ -1,10 +1,13 @@
 package com.jminton.apptracker;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,8 +18,13 @@ import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -86,8 +94,8 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-//        FloatingActionButton refreshBtn = getActivity().findViewById(R.id.refresh);
-//        refreshBtn.setOnClickListener(this);
+        Button btnAdvance = getActivity().findViewById(R.id.btnAdvance);
+        btnAdvance.setOnClickListener(this);
 
         lstApps = (RecyclerView) getView().findViewById(R.id.lstApps);
         layoutManager = new LinearLayoutManager(getContext());
@@ -101,18 +109,72 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
         lstApps.setAdapter(lstAppsAdapter);
 
         onClickRefresh();
+        updateUsage();
 
     }
 
+    //https://developer.android.com/training/animation/reveal-or-hide-view
     protected void updateUsage(){
-        TextView txtWeekUsage = getActivity().findViewById(R.id.txtWeekUsage);
-        String useMessage = TimeConverter.millsToHoursMinutesSecondsVerbose(trackingService.trackedAppsAverageUsageLastWeek());
 
-        String startText = "You've used these apps an average of ";
-        String endText = " a day in total in the last week.";
-        SpannableString str = new SpannableString(startText + useMessage + endText);
-        str.setSpan(new StyleSpan(Typeface.BOLD), startText.length(), startText.length() + useMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        txtWeekUsage.setText(str);
+        int numSelected = 0;
+
+        for(TrackedApp tApp : apps.values()){
+            if(tApp.isTracked()){
+                numSelected++;
+            }
+        }
+
+        final CardView cardView = getView().findViewById(R.id.boxWeekUsage);
+
+        if(numSelected == 0){
+
+            int cx = cardView.getWidth() / 2;
+            int cy = cardView.getHeight() / 2;
+
+            // get the initial radius for the clipping circle
+            float initialRadius = (float) Math.hypot(cx, cy);
+
+            // create the animation (the final radius is zero)
+            Animator anim = ViewAnimationUtils.createCircularReveal(cardView, cx, cy, initialRadius, 0f);
+
+            // make the view invisible when the animation is done
+            anim.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    cardView.setVisibility(View.GONE);
+                }
+            });
+
+            // start the animation
+            anim.start();
+
+        } else {
+
+            if(cardView.getVisibility() == View.GONE){
+                // get the center for the clipping circle
+                int cx = cardView.getWidth() / 2;
+                int cy = cardView.getHeight() / 2;
+
+                // get the final radius for the clipping circle
+                float finalRadius = (float) Math.hypot(cx, cy);
+
+                // create the animator for this view (the start radius is zero)
+                Animator anim = ViewAnimationUtils.createCircularReveal(cardView, cx, cy, 0f, finalRadius);
+
+                // make the view visible and start the animation
+                cardView.setVisibility(View.VISIBLE);
+                anim.start();
+            }
+            TextView txtWeekUsage = getActivity().findViewById(R.id.txtWeekUsage);
+            String useMessage = TimeConverter.millsToHoursMinutesSecondsVerbose(trackingService.trackedAppsAverageUsageLastWeek());
+
+            String startText = "You've used these apps an average of ";
+            String endText = " a day in total in the last week.";
+            SpannableString str = new SpannableString(startText + useMessage + endText);
+            str.setSpan(new StyleSpan(Typeface.BOLD), startText.length(), startText.length() + useMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            txtWeekUsage.setText(str);
+        }
     }
 
     public void onClickRefresh(){
@@ -130,15 +192,15 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-//            case R.id.refresh:
-//                onClickRefresh();
-//                break;
+            case R.id.btnAdvance:
+                Log.d("Trying", "This");
+                ((MainActivity) getActivity()).doLimitsSetup();
+                break;
         }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        onClickRefresh();
     }
 }

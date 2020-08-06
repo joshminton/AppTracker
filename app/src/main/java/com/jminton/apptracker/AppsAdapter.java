@@ -21,6 +21,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
     private TrackingService trackingService;
     private AppsFragment appsFragment;
     ArrayList<TrackedApp> arrayListApps;
+    private int numSelected = 0;
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
@@ -55,6 +56,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 tApp.setTracked(true);
                 listLayout.setCardElevation(10);
                 listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.colorAccentLight));
+                numSelected++;
             }
             else  {
                 checkBox.setChecked(false);
@@ -62,6 +64,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 tApp.setTracked(false);
                 listLayout.setCardElevation(1);
                 listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.blankSurface));
+                numSelected--;
             }
             Log.d("YEEEE", "HAAAAA");
             trackingService.saveTrackedApps();

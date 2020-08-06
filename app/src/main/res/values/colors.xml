@@ -13,4 +13,6 @@
     <color name="error">#DC4545</color>
     <color name="success">#45DC6B</color>
 
+    <color name="white">#FFFFFF</color>
+
 </resources>

@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -83,6 +84,9 @@ public class LimitsFragment extends Fragment implements View.OnClickListener {
         ExtendedFloatingActionButton btnConfirm = getActivity().findViewById(R.id.btnConfirm);
         btnConfirm.setOnClickListener(this);
 
+        Button btnBack = getActivity().findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(this);
+
         averageUsage = trackingService.trackedAppsAverageUsageLastWeek();
 
         seekBar.setProgress((int) (( 1f - ((float) trackingService.getQuota() / (float) (averageUsage / 1000 / 60))) * 100));
@@ -139,10 +143,18 @@ public class LimitsFragment extends Fragment implements View.OnClickListener {
             case R.id.btnConfirm:
                 onClickConfirm();
                 break;
+            case R.id.btnBack:
+                onClickBack();
+                break;
         }
     }
 
     private void onClickConfirm(){
         trackingService.setQuota((long) (averageUsage * ((double) (100 - seekBar.getProgress()) / 100)));
+        ((MainActivity) getActivity()).setupDone();
+    }
+
+    private void onClickBack(){
+        ((MainActivity) getActivity()).doAppsSetup();
     }
 }

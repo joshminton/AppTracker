@@ -136,17 +136,6 @@ public class TrackingService extends Service {
         trackedAppCodes = getTrackedAppsFromPrefs();
         loadSavedQuota();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_PHONE;
-        }
-
-        wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-
-
-        initOverlay();
-
         String NOTIFICATION_CHANNEL_ID = "new_chan2";
         NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "Overlay Channel", NotificationManager.IMPORTANCE_LOW);
         chan.setSound(null, null);
@@ -196,12 +185,23 @@ public class TrackingService extends Service {
             saveAppsAverageUsageLastTwoWeeks();
         }
 
+        if(sharedPref.getBoolean("doneSetup", false)){
+            advanceService();
+        }
+    }
+
+    public void advanceService(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+
+        wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        initOverlay();
         new Handler().post(new tracking());
-
         updateOverlay("none");
-
         show(overlay.findViewById(R.id.innerGlow), 1f);
-
     }
 
 
@@ -233,9 +233,9 @@ public class TrackingService extends Service {
             wm.removeView(overlay);
             overlay = null;
         }
-
-        Intent restartIntent = new Intent(this, RestartReceiver.class);
-        this.sendBroadcast(restartIntent);
+//
+//        Intent restartIntent = new Intent(this, RestartReceiver.class);
+//        this.sendBroadcast(restartIntent);
 
         Log.d("HEY", "----------------------");
     }
@@ -270,14 +270,18 @@ public class TrackingService extends Service {
 
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().width = width;
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().width = width;
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = height;
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = height;
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().width = width;
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = height;
-        overlay.findViewById(R.id.innerGlow).setAlpha(0f);
-        overlay.findViewById(R.id.outerGlow).setAlpha(0f);
+        View innerGlow = overlay.findViewById(R.id.innerGlow);
+        View outerGlow = overlay.findViewById(R.id.outerGlow);
+        View fadingEdge = overlay.findViewById(R.id.fadingEdge);
+
+        innerGlow.getLayoutParams().width = width;
+        outerGlow.getLayoutParams().width = width;
+        innerGlow.getLayoutParams().height = height;
+        outerGlow.getLayoutParams().height = height;
+        fadingEdge.getLayoutParams().width = width;
+        fadingEdge.getLayoutParams().height = height;
+        show(innerGlow, 1f);
+        hide(outerGlow);
 
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
@@ -308,6 +312,7 @@ public class TrackingService extends Service {
         }
     }
 
+    //https://developer.android.com/training/animation/reveal-or-hide-view
     public void hide(){
         overlay.setAlpha(1f);
         overlay.animate()
@@ -512,8 +517,6 @@ public class TrackingService extends Service {
 
         colourFilterColour = newColor;
 
-        int n = 1/0;
-
     }
 
     private void updateNonTrackedGlow(){
@@ -538,6 +541,7 @@ public class TrackingService extends Service {
         colourFilterColour = Color.parseColor("#00000000");
     }
 
+    //https://developer.android.com/training/animation/reveal-or-hide-view
     private void hide(final View v){
 //        v.setAlpha(1f);
         v.animate()
@@ -552,6 +556,7 @@ public class TrackingService extends Service {
         visible = false;
     }
 
+    //https://developer.android.com/training/animation/reveal-or-hide-view
     private void show(View v, float newAlpha){
 //        v.setAlpha(0f);
         v.setVisibility(View.VISIBLE);
@@ -754,8 +759,6 @@ public class TrackingService extends Service {
     }
 
     public void saveAppsAverageUsageLastTwoWeeks(){
-
-        Toast.makeText(this, "Here", Toast.LENGTH_SHORT).show();
 
         UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
 

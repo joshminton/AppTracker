@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
@@ -75,16 +76,13 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
     FragmentManager fm = getSupportFragmentManager();
 
+    SharedPreferences sharedPref;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.permissions_needed);
-
-
-//        db = Room.databaseBuilder(getApplicationContext(), Favourites.class, "favourites").allowMainThreadQueries().build();
 
         appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-
 
         overlayHelper = new OverlayHelper(this.getApplicationContext(), new OverlayHelper.OverlayPermissionChangedListener() {
             @Override public void onOverlayPermissionCancelled() {
@@ -105,31 +103,64 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
         overlayHelper.startWatching();
 
-        checkPermissions();
-
-//        finish();
+        if(overlayHelper.canDrawOverlays()){
+            drawAccess = true;
+        }
+        if(appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED){
+            usageAccess = true;
+        }
+        if(usageAccess & drawAccess){
+            advanceWithService();
+        } else {
+            getPermissionsScreen();
+        }
     }
 
-    private void advanceWithService(){
+    private void getPermissionsScreen() {
+        setContentView(R.layout.permissions_needed);
+        checkPermissions();
+    }
 
-        setContentView(R.layout.activity_main);
-
-        fm.beginTransaction().add(R.id.frag_frame, homeFrag).commit();
-
-        ((BottomNavigationView)findViewById(R.id.bottomNav)).setOnNavigationItemSelectedListener(this);
+    private void advanceWithService() {
 
         svc = new Intent(this, TrackingService.class);
-        if(!bound) {
+        if (!bound) {
             startForegroundService(svc);
             bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
-
-        if(trackingService != null){
-            trackingService.saveAppsAverageUsageLastTwoWeeks();
-        }
-
     }
 
+    private void whenServiceStarted(){
+        trackingService.saveAppsAverageUsageLastTwoWeeks();
+
+        setContentView(R.layout.activity_main);
+
+        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
+        if(!sharedPref.getBoolean("doneSetup", false)){
+            doAppsSetup();
+        } else {
+            FragmentTransaction fT = fm.beginTransaction();
+            fT.replace(R.id.frag_frame, homeFrag).commit();
+        }
+    }
+
+    public void doAppsSetup(){
+        FragmentTransaction fT = fm.beginTransaction();
+        fT.replace(R.id.frag_frame, appsFrag).commit();
+    }
+
+    public void doLimitsSetup(){
+        FragmentTransaction fT = fm.beginTransaction();
+        fT.replace(R.id.frag_frame, limitsFrag).commit();
+    }
+
+    public void setupDone(){
+        sharedPref.edit().putBoolean("doneSetup", true).apply();
+        FragmentTransaction fT = fm.beginTransaction();
+        fT.replace(R.id.frag_frame, homeFrag).commit();
+        trackingService.advanceService();
+    }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -149,20 +180,35 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         return false;
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if(isMyServiceRunning(TrackingService.class)){
-            svc = new Intent(this, TrackingService.class);
-            bindService(svc, connection, Context.BIND_AUTO_CREATE);
-        }
-    }
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//
+//        setContentView(R.layout.activity_main);
+//
+//        if(isMyServiceRunning(TrackingService.class)){
+//            svc = new Intent(this, TrackingService.class);
+//            bindService(svc, connection, Context.BIND_AUTO_CREATE);
+//        }
+//
+//        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
+//
+//        if(sharedPref.getBoolean("doneSetup", false)){
+//            Log.d("Got here", "boiiiiii");
+//            FragmentTransaction fT = fm.beginTransaction();
+//            fT.replace(R.id.frag_frame, homeFrag).commit();
+//        } else {
+//            doAppsSetup();
+//        }
+//    }
 
     @Override
     protected void onStop() {
         super.onStop();
         if(bound){
-            unbindService(connection);
+            if(connection != null){
+                unbindService(connection);
+            }
         }
     }
 
@@ -200,16 +246,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         }
     }
 
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public void onClickStartStop(View view){
-        svc = new Intent(this, TrackingService.class);
-        if(!bound) {
-            startForegroundService(svc);
-            bindService(svc, connection, Context.BIND_AUTO_CREATE);
-        }
-    }
-
     private ServiceConnection connection = new ServiceConnection() {
 
         @Override
@@ -218,6 +254,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             TrackingService.LocalBinder binder = (TrackingService.LocalBinder) service;
             trackingService = binder.getService();
             bound = true;
+            whenServiceStarted();
         }
 
         @Override
@@ -286,5 +323,11 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         return trackingService;
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(!sharedPref.getBoolean("doneSetup", false)){
+            trackingService.stopForeground(true);
+        }
+    }
 }
