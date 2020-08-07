@@ -31,7 +31,9 @@ import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 
 import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -41,6 +43,7 @@ import android.view.WindowManager.LayoutParams;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -89,9 +92,12 @@ public class TrackingService extends Service {
     private int startHour = 05;
     private int startMinute = 30;
 
-    private int dailyQuotaMinutes = 30;
+    private int dailyQuotaMinutes = 2;
 
     private long interval = 2500;
+
+    int fadingEdgeLength = 200;
+    private DisplayMetrics displayMetrics;
 
     HashMap<String, TrackedApp> apps;
     private TrackedAppDatabase db;
@@ -165,6 +171,7 @@ public class TrackingService extends Service {
         startForeground(1, notification);
 
         visible = true;
+        displayMetrics = getResources().getDisplayMetrics();
 
         apps = new HashMap<>();
 
@@ -490,13 +497,7 @@ public class TrackingService extends Service {
 
     private void updateTrackedGlow(){
         float recentPercentage = recentPercentage();
-        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
-//        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-//        show(overlay.findViewById(R.id.outerGlow), recentPercentage);
-//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
-//        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
-
-
+        updateHeight();
         int newColor = getColorFromPercentage(recentPercentage);
 
 //        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
@@ -518,11 +519,7 @@ public class TrackingService extends Service {
     }
 
     private void updateNonTrackedGlow(){
-        int glowHeight = (int) (((double) height) * quotaPercentageUsed());
-//        hide(overlay.findViewById(R.id.outerGlow));
-//        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
-//        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+        updateHeight();
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -535,7 +532,28 @@ public class TrackingService extends Service {
         anim.start();
         overlay.getRootView().requestLayout();
 
+        overlay.findViewById((R.id.innerGlow)).invalidate();
+        overlay.findViewById((R.id.outerGlow)).invalidate();
+
         colourFilterColour = Color.parseColor("#00000000");
+    }
+
+    private void updateHeight(){
+        double quotaPercentageUsed = quotaPercentageUsed();
+        int glowHeight = (int) (((double) height) * quotaPercentageUsed);
+        ((GlowView) overlay.findViewById((R.id.outerGlow))).setHeight((float) quotaPercentageUsed, height);
+        ((GlowView) overlay.findViewById((R.id.innerGlow))).setHeight((float) quotaPercentageUsed, height);
+
+        int fadingEdgeLengthPx = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, fadingEdgeLength, displayMetrics);
+
+        if(quotaPercentageUsed > 0.9){
+            fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * (1 - quotaPercentageUsed) * 10);
+            ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
+            Log.d("yep", "   ");
+        } else if(quotaPercentageUsed < 0.1){
+            fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * quotaPercentageUsed * 10);
+            ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
+        }
     }
 
     //https://developer.android.com/training/animation/reveal-or-hide-view
