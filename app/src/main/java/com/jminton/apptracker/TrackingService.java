@@ -201,7 +201,7 @@ public class TrackingService extends Service {
         initOverlay();
         new Handler().post(new tracking());
         updateOverlay("none");
-        show(overlay.findViewById(R.id.innerGlow), 1f);
+//        show(overlay.findViewById(R.id.innerGlow), 1f);
     }
 
 
@@ -270,18 +270,18 @@ public class TrackingService extends Service {
 
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
-        View innerGlow = overlay.findViewById(R.id.innerGlow);
-        View outerGlow = overlay.findViewById(R.id.outerGlow);
-        View fadingEdge = overlay.findViewById(R.id.fadingEdge);
+//        View innerGlow = overlay.findViewById(R.id.innerGlow);
+//        View outerGlow = overlay.findViewById(R.id.outerGlow);
+//        View fadingEdge = overlay.findViewById(R.id.fadingEdge);
 
-        innerGlow.getLayoutParams().width = width;
-        outerGlow.getLayoutParams().width = width;
-        innerGlow.getLayoutParams().height = height;
-        outerGlow.getLayoutParams().height = height;
-        fadingEdge.getLayoutParams().width = width;
-        fadingEdge.getLayoutParams().height = height;
-        show(innerGlow, 1f);
-        hide(outerGlow);
+//        innerGlow.getLayoutParams().width = width;
+//        outerGlow.getLayoutParams().width = width;
+//        innerGlow.getLayoutParams().height = height;
+//        outerGlow.getLayoutParams().height = height;
+//        fadingEdge.getLayoutParams().width = width;
+//        fadingEdge.getLayoutParams().height = height;
+//        show(innerGlow, 1f);
+//        hide(outerGlow);
 
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
@@ -491,10 +491,10 @@ public class TrackingService extends Service {
     private void updateTrackedGlow(){
         float recentPercentage = recentPercentage();
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-        show(overlay.findViewById(R.id.outerGlow), recentPercentage);
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+//        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
+//        show(overlay.findViewById(R.id.outerGlow), recentPercentage);
+//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
+//        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
 
 
         int newColor = getColorFromPercentage(recentPercentage);
@@ -504,8 +504,8 @@ public class TrackingService extends Service {
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
-                ((ImageView) overlay.findViewById(R.id.outerGlow)).setColorFilter((int) animation.getAnimatedValue());
+//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+//                ((ImageView) overlay.findViewById(R.id.outerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
         anim.setDuration(interval/2);
@@ -519,16 +519,16 @@ public class TrackingService extends Service {
 
     private void updateNonTrackedGlow(){
         int glowHeight = (int) (((double) height) * quotaPercentageUsed());
-        hide(overlay.findViewById(R.id.outerGlow));
-        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
-        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
-        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
+//        hide(overlay.findViewById(R.id.outerGlow));
+//        overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
+//        overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
+//        overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
-                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
+//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
         anim.setDuration(interval/2);
