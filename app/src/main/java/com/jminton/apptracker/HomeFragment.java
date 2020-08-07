@@ -85,6 +85,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
     }
 
     public void onClickSettings(){
+
         ((MainActivity) getActivity()).doAppsSetup();
     }
 }

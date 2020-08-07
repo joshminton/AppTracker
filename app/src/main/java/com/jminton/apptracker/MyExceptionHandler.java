@@ -19,32 +19,10 @@ public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
     }
 
     @Override
-    public void uncaughtException(Thread thread, Throwable ex) {
-
-        Log.d("HEY", "----------------------");
-
-
-        Intent restartIntent = new Intent(service, RestartReceiver.class);
-
-        restartIntent.putExtra("crash", true);
-        restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_CLEAR_TASK
-                | Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(service.getApplicationContext(), 0, restartIntent, PendingIntent.FLAG_ONE_SHOT);
-
-        AlarmManager mgr = (AlarmManager) service.getApplicationContext().getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, pendingIntent);
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            service.getApplicationContext().startForegroundService(new Intent(service.getApplicationContext(), TrackingService.class));
-//        } else {
-//            service.getApplicationContext().startService(new Intent(service.getApplicationContext(), TrackingService.class));
-//        }
-
-
-        Log.d("HEY", "----------------------");
-
-        System.exit(1);
+    public void uncaughtException(Thread thread, Throwable throwable) {
+//        Intent intent = getBaseContext().getPackageManager()
+//                .getLaunchIntentForPackage(getBaseContext().getPackageName() );
+//        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//        startActivity(intent);
     }
 }

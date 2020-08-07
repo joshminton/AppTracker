@@ -17,13 +17,15 @@
                     android:id="@+id/innerGlow"
                     android:layout_height="match_parent"
                     android:layout_width="match_parent"
-                    android:layout_gravity="bottom">
+                    android:layout_gravity="bottom"
+                    android:background="@android:color/transparent">
                 </com.jminton.apptracker.InnerGlowView>
                 <com.jminton.apptracker.OuterGlowView
                     android:id="@+id/outerGlow"
                     android:layout_height="match_parent"
                     android:layout_width="match_parent"
-                    android:layout_gravity="bottom">
+                    android:layout_gravity="bottom"
+                    android:background="@android:color/transparent">
                 </com.jminton.apptracker.OuterGlowView>
         </com.bosphere.fadingedgelayout.FadingEdgeLayout>
 

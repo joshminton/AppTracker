@@ -96,6 +96,11 @@ public class TrackingService extends Service {
 
     private long interval = 2500;
 
+    private boolean reset;
+
+    FadingEdgeLayout fadingEdge;
+    OuterGlowView outerGlow;
+    InnerGlowView innerGlow;
     int fadingEdgeLength = 200;
     private DisplayMetrics displayMetrics;
 
@@ -106,7 +111,7 @@ public class TrackingService extends Service {
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 5;
+    private int heavyUseInterval = 15;
 
     private int LAYOUT_FLAG;
 
@@ -136,6 +141,8 @@ public class TrackingService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        startService(new Intent(getBaseContext(), ReportService.class));
 
 //        db = Room.databaseBuilder(getApplicationContext(), TrackedAppDatabase.class, "tracked-apps").allowMainThreadQueries().build();
         sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
@@ -195,6 +202,8 @@ public class TrackingService extends Service {
         if(sharedPref.getBoolean("doneSetup", false)){
             advanceService();
         }
+
+        reset = false;
     }
 
     public void advanceService(){
@@ -218,7 +227,8 @@ public class TrackingService extends Service {
 
         Log.d(this.getPackageName(), "hey");
 
-        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
+//        hide(outerGlow);
+//        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
 
         if (intent.getBooleanExtra("crash", false)) {
             Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
@@ -277,6 +287,16 @@ public class TrackingService extends Service {
 
         overlay = LayoutInflater.from(this).inflate(R.layout.glow, null);
 
+        innerGlow = overlay.findViewById(R.id.innerGlow);
+        outerGlow = overlay.findViewById(R.id.outerGlow);
+        fadingEdge = overlay.findViewById(R.id.fadingEdge);
+        innerGlow.setWillNotDraw(false);
+        outerGlow.setWillNotDraw(false);
+        fadingEdge.setWillNotDraw(false);
+        show(innerGlow, 1f);
+
+        reset = false;
+
 //        View innerGlow = overlay.findViewById(R.id.innerGlow);
 //        View outerGlow = overlay.findViewById(R.id.outerGlow);
 //        View fadingEdge = overlay.findViewById(R.id.fadingEdge);
@@ -287,8 +307,7 @@ public class TrackingService extends Service {
 //        outerGlow.getLayoutParams().height = height;
 //        fadingEdge.getLayoutParams().width = width;
 //        fadingEdge.getLayoutParams().height = height;
-//        show(innerGlow, 1f);
-//        hide(outerGlow);
+        updateOverlay("not sure");
 
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
@@ -460,19 +479,11 @@ public class TrackingService extends Service {
 
         currentApp = appChecker.getForegroundApp(TrackingService.this);
 
-//            Log.d("Tracked usage", quotaPercentageUsed() + "");
-//            Log.d("recent percentage ", recentPercentage() + "");
-
-
         if(lastPkgName == null){
             lastPkgName = "none";
         }
 
         Log.d("Hmmmm", "lastPkgName = " + lastPkgName + ", currentApp = " + currentApp);
-
-//            if(currentApp == null){
-//                currentApp
-//            }
 
         if(currentApp.equals(lastPkgName)){
             if(isTracked(currentApp)){
@@ -483,6 +494,8 @@ public class TrackingService extends Service {
         } else {
             if(isTracked(currentApp)){
                 updateTrackedGlow();
+            } else {
+                updateNonTrackedGlow();
             }
         }
 
@@ -496,63 +509,72 @@ public class TrackingService extends Service {
 
 
     private void updateTrackedGlow(){
+        reset = false;
         float recentPercentage = recentPercentage();
         updateHeight();
         int newColor = getColorFromPercentage(recentPercentage);
+        show(outerGlow, recentPercentage);
+        show(innerGlow, 1f);
 
 //        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
-//                ((ImageView) overlay.findViewById(R.id.outerGlow)).setColorFilter((int) animation.getAnimatedValue());
+                innerGlow.setColour((int) animation.getAnimatedValue());
+                outerGlow.setColour((int) animation.getAnimatedValue());
+                innerGlow.invalidate();
+                outerGlow.invalidate();
             }
         });
         anim.setDuration(interval/2);
         anim.start();
         overlay.getRootView().requestLayout();
-        Log.d("Color", "New color");
-
+        innerGlow.invalidate();
+        outerGlow.invalidate();
         colourFilterColour = newColor;
-
     }
 
     private void updateNonTrackedGlow(){
-        updateHeight();
-        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
-        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
-//                ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
-            }
-        });
-        anim.setDuration(interval/2);
-        anim.start();
-        overlay.getRootView().requestLayout();
+        if(!reset) {
+            Log.d("updating non tracked glow", " n  ");
+            updateHeight();
+            ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
+            hide(outerGlow);
+            show(innerGlow, 1f);
+            anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    innerGlow.setColour((int) animation.getAnimatedValue());
+                    outerGlow.setColour((int) animation.getAnimatedValue());
+                    innerGlow.invalidate();
+                    outerGlow.invalidate();
+                }
+            });
+            anim.setDuration(interval / 2);
+            anim.start();
+            overlay.getRootView().requestLayout();
 
-        overlay.findViewById((R.id.innerGlow)).invalidate();
-        overlay.findViewById((R.id.outerGlow)).invalidate();
-
-        colourFilterColour = Color.parseColor("#00000000");
+            colourFilterColour = Color.parseColor("#00000000");
+            reset = true;
+        }
     }
 
     private void updateHeight(){
         double quotaPercentageUsed = quotaPercentageUsed();
-        int glowHeight = (int) (((double) height) * quotaPercentageUsed);
-        ((GlowView) overlay.findViewById((R.id.outerGlow))).setHeight((float) quotaPercentageUsed, height);
-        ((GlowView) overlay.findViewById((R.id.innerGlow))).setHeight((float) quotaPercentageUsed, height);
+        Log.d("Quota percentage used", quotaPercentageUsed + " ");
+        outerGlow.setHeight((float) quotaPercentageUsed, height);
+        innerGlow.setHeight((float) quotaPercentageUsed, height);
 
         int fadingEdgeLengthPx = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, fadingEdgeLength, displayMetrics);
 
         if(quotaPercentageUsed > 0.9){
             fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * (1 - quotaPercentageUsed) * 10);
-            ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
+            fadingEdge.setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
             Log.d("yep", "   ");
         } else if(quotaPercentageUsed < 0.1){
             fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * quotaPercentageUsed * 10);
-            ((FadingEdgeLayout) overlay.findViewById(R.id.fadingEdge)).setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
+            fadingEdge.setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
         }
     }
 
