@@ -442,8 +442,6 @@ public class TrackingService extends Service {
             if(!lastSavedDate.equals(getDateString())){
                 Log.d("SAVING", "SAVING");
                 saveAppsAverageUsageLastTwoWeeks();
-            } else {
-                Log.d("NOTTTT", "SAVVVVIIIINNNNGGG");
             }
 
             handler.postDelayed(this, interval);
@@ -510,7 +508,7 @@ public class TrackingService extends Service {
                 ((ImageView) overlay.findViewById(R.id.outerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
-        anim.setDuration(interval);
+        anim.setDuration(interval/2);
         anim.start();
         overlay.getRootView().requestLayout();
         Log.d("Color", "New color");
@@ -525,7 +523,6 @@ public class TrackingService extends Service {
         overlay.findViewById(R.id.innerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.outerGlow).getLayoutParams().height = glowHeight;
         overlay.findViewById(R.id.fadingEdge).getLayoutParams().height = glowHeight;
-        Log.d("New Height", ""+overlay.findViewById(R.id.innerGlow).getLayoutParams().height);
         ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, Color.parseColor("#00000000"));
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -534,7 +531,7 @@ public class TrackingService extends Service {
                 ((ImageView) overlay.findViewById(R.id.innerGlow)).setColorFilter((int) animation.getAnimatedValue());
             }
         });
-        anim.setDuration(interval);
+        anim.setDuration(interval/2);
         anim.start();
         overlay.getRootView().requestLayout();
 
@@ -546,7 +543,7 @@ public class TrackingService extends Service {
 //        v.setAlpha(1f);
         v.animate()
                 .alpha(0f)
-                .setDuration(interval)
+                .setDuration(interval/2)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -562,7 +559,7 @@ public class TrackingService extends Service {
         v.setVisibility(View.VISIBLE);
         v.animate()
                 .alpha(newAlpha)
-                .setDuration(interval)
+                .setDuration(interval/2)
                 .setListener(null);
 
         visible = true;
@@ -857,15 +854,14 @@ public class TrackingService extends Service {
         Log.d("TRYING", id + " Trying to upload.");
 
         Uri file = Uri.fromFile(new File(getFilesDir() + "/" + filename));
-        StorageReference riversRef = storageRef.child("usage/" + id + "/" + file.getLastPathSegment());
-        UploadTask uploadTask = riversRef.putFile(file);
-
-        Log.d("FAILURE?", "FAILURE?");
+        StorageReference ref = storageRef.child("usage/" + id + "/" + file.getLastPathSegment());
+        UploadTask uploadTask = ref.putFile(file);
 
         // Register observers to listen for when the download is done or if it fails
         uploadTask.addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
+                sharedPref.edit().putString("dateLastSaved", "none").apply();
                 Log.d("FAILURE", "FAILURE");
             }
         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {

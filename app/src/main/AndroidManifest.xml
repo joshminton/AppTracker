@@ -50,7 +50,7 @@
         </receiver>
 
         <receiver
-            android:name="RestartReceiver"
+            android:name="com.jminton.apptracker.RestartReceiver"
             android:enabled="true"
             android:exported="true" />
 

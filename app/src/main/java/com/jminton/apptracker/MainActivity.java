@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     Intent svc;
     TrackingService trackingService;
     boolean bound = false;
+    boolean connected = false;
     RecyclerView lstApps;
     RecyclerView.LayoutManager layoutManager;
     AppsAdapter lstAppsAdapter;
@@ -81,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Log.d("S", "onCreate");
 
         appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
 
@@ -124,22 +127,26 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
     private void advanceWithService() {
 
+        setContentView(R.layout.activity_main);
+
         svc = new Intent(this, TrackingService.class);
         if (!bound) {
             startForegroundService(svc);
-            bindService(svc, connection, Context.BIND_AUTO_CREATE);
+            bound = bindService(svc, connection, Context.BIND_AUTO_CREATE);
         }
     }
 
     private void whenServiceStarted(){
         trackingService.saveAppsAverageUsageLastTwoWeeks();
 
-        setContentView(R.layout.activity_main);
+//        setContentView(R.layout.activity_main);
 
         sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         if(!sharedPref.getBoolean("doneSetup", false)){
             doAppsSetup();
         } else {
+            Log.d("Going here", "here");
+            fm = getSupportFragmentManager();
             FragmentTransaction fT = fm.beginTransaction();
             fT.replace(R.id.frag_frame, homeFrag).commit();
         }
@@ -184,27 +191,37 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 //    protected void onResume() {
 //        super.onResume();
 //
-//        setContentView(R.layout.activity_main);
 //
-//        if(isMyServiceRunning(TrackingService.class)){
-//            svc = new Intent(this, TrackingService.class);
-//            bindService(svc, connection, Context.BIND_AUTO_CREATE);
-//        }
-//
-//        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
-//
-//        if(sharedPref.getBoolean("doneSetup", false)){
-//            Log.d("Got here", "boiiiiii");
-//            FragmentTransaction fT = fm.beginTransaction();
-//            fT.replace(R.id.frag_frame, homeFrag).commit();
-//        } else {
-//            doAppsSetup();
-//        }
+////        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
+////
+////        if(sharedPref.getBoolean("doneSetup", false)){
+////            Log.d("Got here", "boiiiiii");
+////            FragmentTransaction fT = fm.beginTransaction();
+////            fT.replace(R.id.frag_frame, homeFrag).commit();
+////        } else {
+////            doAppsSetup();
+////        }
 //    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Log.d("S", "onStart");
+
+//        setContentView(R.layout.activity_main);
+
+        if(isMyServiceRunning(TrackingService.class)){
+            svc = new Intent(this, TrackingService.class);
+            bound = bindService(svc, connection, Context.BIND_AUTO_CREATE);
+        }
+
+    }
 
     @Override
     protected void onStop() {
         super.onStop();
+        Log.d("S", "onStop");
         if(bound){
             if(connection != null){
                 unbindService(connection);
@@ -253,7 +270,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             TrackingService.LocalBinder binder = (TrackingService.LocalBinder) service;
             trackingService = binder.getService();
-            bound = true;
             whenServiceStarted();
         }
 
@@ -326,6 +342,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d("S", "onDestroy");
         if(!sharedPref.getBoolean("doneSetup", false)){
             trackingService.stopForeground(true);
         }
