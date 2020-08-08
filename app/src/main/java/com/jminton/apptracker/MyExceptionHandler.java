@@ -8,14 +8,18 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Process;
 import android.util.Log;
+
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.firebase.crashlytics.internal.common.CrashlyticsCore;
 
 public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 
-    private Service service;
+    private Context context;
 
-    public MyExceptionHandler(Service s) {
-        service = s;
+    public MyExceptionHandler(Context context) {
+        context = context;
     }
 
     @Override
@@ -24,5 +28,17 @@ public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 //                .getLaunchIntentForPackage(getBaseContext().getPackageName() );
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 //        startActivity(intent);
+
+        Intent intent = new Intent(context, MainActivity.class);
+
+        Log.d("Catch!", "catc");
+
+        FirebaseCrashlytics.getInstance().sendUnsentReports();
+
+        context.startActivity(intent);
+
+        Process.killProcess(Process.myPid());
+        System.exit(0);
+
     }
 }

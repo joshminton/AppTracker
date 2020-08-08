@@ -1,5 +1,6 @@
 package com.jminton.apptracker;
 
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -62,6 +63,8 @@ public class LimitsFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -119,11 +122,16 @@ public class LimitsFragment extends Fragment implements View.OnClickListener {
         }
     };
 
-    private void seekBarUpdate(int progress){
+    private void seekBarUpdate(int progress) {
+
+        progress -= 50;
+
         txtTarget.setText(TimeConverter.millsToHoursMinutesSecondsVerbose((long) (averageUsage * ((double) (100 - progress) / 100))));
-        if(progress < 33){
-            txtComment.setText("That's only a reduction of " + progress + "%...");
-        } else if(progress < 66){
+        if (progress < 0) {
+            txtComment.setText("That's more than you normally use them!");
+        } else if (progress < 33) {
+            txtComment.setText("That's a reduction of " + progress + "%...");
+        } else if (progress < 66) {
             txtComment.setText("That's a reduction of " + progress + "%.");
         } else {
             txtComment.setText("That's a reduction of " + progress + "%!");

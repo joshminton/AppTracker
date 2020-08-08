@@ -12,10 +12,10 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
-    <string name="status_title">&appname; is watching your device use.</string>
-    <string name="status_message">Progression towards your daily quota of app use is displayed at the edge of the screen.\n\n
-        And the more you use an app you\'re aiming to use less, the brighter this will get.\n\n
-        When you stop using it, this will cool off.
+    <string name="status_title">&appname; is running!</string>
+    <string name="status_message">Progress towards your daily quota of app use, for the apps you selected, is visualised around the edge of the screen.
+        \n\nAnd the more you use an app you\'re aiming to use less, the brighter this will get.
+        \n\nWhen you stop using it, this will \'cool off\'.
     </string>
 
 

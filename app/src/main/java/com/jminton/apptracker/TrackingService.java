@@ -29,6 +29,8 @@ import android.os.IBinder;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -66,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 //https://stackoverflow.com/questions/55045005/draw-overlay-underneath-navigation-bar
 //https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
@@ -96,7 +99,11 @@ public class TrackingService extends Service {
 
     private long interval = 2500;
 
+    private float recentPercentage = 0f;
+    private double quotaPercentageUsed = 0;
+
     private boolean reset;
+    private boolean glowSwitch;
 
     FadingEdgeLayout fadingEdge;
     OuterGlowView outerGlow;
@@ -111,7 +118,7 @@ public class TrackingService extends Service {
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 15;
+    private int heavyUseInterval = 1;
 
     private int LAYOUT_FLAG;
 
@@ -157,13 +164,14 @@ public class TrackingService extends Service {
 
         manager.createNotificationChannel(chan);
 
-        Intent notificationIntent = new Intent(this, TrackingService.class);
+        Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent =
                 PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
         //https://stackoverflow.com/a/15538209/3032936
 
         mBuilder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID);
+
 
         notification =  mBuilder
                 .setContentTitle("Tracking your usage.")
@@ -173,7 +181,7 @@ public class TrackingService extends Service {
                 .setTicker("Oi oi!")
                 .setColorized(true)
                 .setOnlyAlertOnce(true)
-                .setColor(getResources().getColor(R.color.colorAccent))
+                .setContentIntent(pendingIntent)
                 .build();
         startForeground(1, notification);
 
@@ -228,7 +236,7 @@ public class TrackingService extends Service {
         Log.d(this.getPackageName(), "hey");
 
 //        hide(outerGlow);
-//        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
+        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
 
         if (intent.getBooleanExtra("crash", false)) {
             Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
@@ -236,10 +244,20 @@ public class TrackingService extends Service {
             Log.d("Restart after", "CRASSSSSHHHHHHHHHHHHHHHHHHH");
         }
 
-//        // If we get killed, after returning from here, restart
-//        return START_STICKY;
+//        PeriodicWorkRequest uploadCrashRequest =
+//                new PeriodicWorkRequest.Builder(ReportUploadWorker.class, 5, TimeUnit.MINUTES)
+//                        // Constraints
+//                        .build();
+//
+//        WorkManager
+//                .getInstance(getApplicationContext())
+//                .enqueue(uploadCrashRequest);
 
-        return android.app.Service.START_REDELIVER_INTENT;
+
+//        // If we get killed, after returning from here, restart
+        return START_STICKY;
+
+//        return android.app.Service.START_REDELIVER_INTENT;
     }
 
 
@@ -296,6 +314,7 @@ public class TrackingService extends Service {
         show(innerGlow, 1f);
 
         reset = false;
+        glowSwitch = false;
 
 //        View innerGlow = overlay.findViewById(R.id.innerGlow);
 //        View outerGlow = overlay.findViewById(R.id.outerGlow);
@@ -485,21 +504,33 @@ public class TrackingService extends Service {
 
         Log.d("Hmmmm", "lastPkgName = " + lastPkgName + ", currentApp = " + currentApp);
 
+        boolean isTracked = isTracked(currentApp);
+
         if(currentApp.equals(lastPkgName)){
-            if(isTracked(currentApp)){
+            if(isTracked){
                 updateTrackedGlow();
             } else {
                 updateNonTrackedGlow();
             }
         } else {
-            if(isTracked(currentApp)){
+            if(isTracked){
                 updateTrackedGlow();
             } else {
                 updateNonTrackedGlow();
             }
         }
 
-        mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed() * 100) + "% of your daily allowance.");
+        mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed * 100) + "% of your daily allowance.");
+
+        if(isTracked){
+            float[] notifColor = new float[3];
+            Color.colorToHSV(colourFilterColour, notifColor);
+            notifColor[2] = recentPercentage;
+            mBuilder.setColor(Color.HSVToColor(notifColor));
+        } else {
+            mBuilder.setColor(colourFilterColour);
+        }
+
         NotificationManager mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.notify(1, mBuilder.build());
@@ -510,29 +541,69 @@ public class TrackingService extends Service {
 
     private void updateTrackedGlow(){
         reset = false;
-        float recentPercentage = recentPercentage();
+        recentPercentage = recentPercentage();
         updateHeight();
         int newColor = getColorFromPercentage(recentPercentage);
         show(outerGlow, recentPercentage);
         show(innerGlow, 1f);
 
-//        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
-        ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
-        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                innerGlow.setColour((int) animation.getAnimatedValue());
-                outerGlow.setColour((int) animation.getAnimatedValue());
-                innerGlow.invalidate();
-                outerGlow.invalidate();
+
+        if(recentPercentage == 1){
+
+            if(glowSwitch){
+                float[] hsv = new float[3];
+                Color.colorToHSV(newColor, hsv);
+                hsv[2] = 0.8f;
+                ValueAnimator anim = ValueAnimator.ofArgb(newColor, Color.HSVToColor(hsv));
+                anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        innerGlow.setColour((int) animation.getAnimatedValue());
+                        outerGlow.setColour((int) animation.getAnimatedValue());
+                        innerGlow.invalidate();
+                        outerGlow.invalidate();
+                    }
+                });
+                anim.setDuration(interval);
+                anim.start();
+                Log.d("Colour change", "From " + newColor + " to " + Color.HSVToColor(hsv));
+                colourFilterColour = Color.HSVToColor(hsv);
+            } else {
+                ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
+                anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        innerGlow.setColour((int) animation.getAnimatedValue());
+                        outerGlow.setColour((int) animation.getAnimatedValue());
+                        innerGlow.invalidate();
+                        outerGlow.invalidate();
+                    }
+                });
+                anim.setDuration(interval);
+                anim.start();
+                Log.d("Colour change here", "From " + colourFilterColour + " to " + newColor);
+                colourFilterColour = newColor;
             }
-        });
-        anim.setDuration(interval/2);
-        anim.start();
+            glowSwitch = !glowSwitch;
+        } else {
+            //        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
+            ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
+            anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    innerGlow.setColour((int) animation.getAnimatedValue());
+                    outerGlow.setColour((int) animation.getAnimatedValue());
+                    innerGlow.invalidate();
+                    outerGlow.invalidate();
+                }
+            });
+            anim.setDuration(interval/2);
+            anim.start();
+            colourFilterColour = newColor;
+        }
         overlay.getRootView().requestLayout();
         innerGlow.invalidate();
         outerGlow.invalidate();
-        colourFilterColour = newColor;
     }
 
     private void updateNonTrackedGlow(){
@@ -561,7 +632,7 @@ public class TrackingService extends Service {
     }
 
     private void updateHeight(){
-        double quotaPercentageUsed = quotaPercentageUsed();
+        quotaPercentageUsed = quotaPercentageUsed();
         Log.d("Quota percentage used", quotaPercentageUsed + " ");
         outerGlow.setHeight((float) quotaPercentageUsed, height);
         innerGlow.setHeight((float) quotaPercentageUsed, height);

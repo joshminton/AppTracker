@@ -10,7 +10,7 @@ public class InnerGlowView extends GlowView {
 
     public InnerGlowView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.border);
+        this.bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.inner_glow);
         init();
     }
 }

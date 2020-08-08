@@ -29,6 +29,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.adriangl.overlayhelper.OverlayHelper;
@@ -38,6 +39,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.judemanutd.autostarter.AutoStartPermissionHelper;
 
 import java.io.File;
 
@@ -53,23 +55,14 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     Intent svc;
     TrackingService trackingService;
     boolean bound = false;
-    boolean connected = false;
-    RecyclerView lstApps;
-    RecyclerView.LayoutManager layoutManager;
-    AppsAdapter lstAppsAdapter;
 
     OverlayHelper overlayHelper;
 
     private boolean drawAccess = false;
     private boolean usageAccess = false;
 
-    private TrackedApp db;
-
     AppOpsManager appOps;
     private static final int MY_PERMISSIONS_REQUEST_PACKAGE_USAGE_STATS = 1;
-
-    private int startHour = 22;
-    private int startMinute = 25;
 
     HomeFragment homeFrag = new HomeFragment();
     AppsFragment appsFrag = new AppsFragment();
@@ -83,7 +76,28 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.d("S", "onCreate");
+        // FullScreen
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+
+        if(AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(getBaseContext())){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Allow this app to auto-start itself?");
+            builder.setMessage("Your phone restricts apps from starting themselves when you turn on your device. " +
+                    "For this app to run correctly, please give this app permission to do that on the following screen.");
+            // add the buttons
+            builder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    AutoStartPermissionHelper.getInstance().getAutoStartPermission(getBaseContext());
+                }
+            });
+            builder.setNegativeButton("Cancel", null);
+            // create and show the alert dialog
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
 
         appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
 
@@ -270,6 +284,7 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             TrackingService.LocalBinder binder = (TrackingService.LocalBinder) service;
             trackingService = binder.getService();
+            Log.d("Here jeff", "yeah");
             whenServiceStarted();
         }
 
@@ -325,12 +340,14 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     }
 
     private void setUsagePositive(){
+        usageAccess = true;
         ((CardView) findViewById(R.id.usageAccessCard)).setCardBackgroundColor(getColor(R.color.success));
         findViewById(R.id.txtUsageIcon).setBackground(getDrawable(R.drawable.ic_baseline_check_circle_outline_24));
 
     }
 
     private void setDrawPositive(){
+        drawAccess = true;
         ((CardView) findViewById(R.id.drawAccessCard)).setCardBackgroundColor(getColor(R.color.success));
         findViewById(R.id.txtDrawIcon).setBackground(getDrawable(R.drawable.ic_baseline_check_circle_outline_24));
     }
@@ -343,8 +360,10 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     protected void onDestroy() {
         super.onDestroy();
         Log.d("S", "onDestroy");
-        if(!sharedPref.getBoolean("doneSetup", false)){
-            trackingService.stopForeground(true);
+        if(sharedPref != null){
+            if(!sharedPref.getBoolean("doneSetup", false)){
+                trackingService.stopForeground(true);
+            }
         }
     }
 }
