@@ -35,6 +35,11 @@
             android:exported="true"
             android:directBootAware="true" />
 
+        <service android:name="com.jminton.apptracker.RestartService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+
         <receiver
             android:name="com.jminton.apptracker.BootUpReceiver"
             android:enabled="true"
@@ -53,6 +58,15 @@
             android:name="com.jminton.apptracker.RestartReceiver"
             android:enabled="true"
             android:exported="true" />
+
+        <receiver android:name="com.jminton.apptracker.PowerReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

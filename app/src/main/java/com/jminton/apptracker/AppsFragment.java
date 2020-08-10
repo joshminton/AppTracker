@@ -2,6 +2,7 @@ package com.jminton.apptracker;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
@@ -79,8 +80,17 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+//            int currentNightMode = getContext().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+//            switch (currentNightMode) {
+//                case Configuration.UI_MODE_NIGHT_NO:
+//                    getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+//                    break;
+//                case Configuration.UI_MODE_NIGHT_YES:
+//                    getActivity().getWindow().getDecorView().setSystemUiVisibility(0);
+//                    break;
+//            }
+//        }
 
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
@@ -175,7 +185,7 @@ public class AppsFragment extends Fragment implements View.OnClickListener {
             String useMessage = TimeConverter.millsToHoursMinutesSecondsVerbose(trackingService.trackedAppsAverageUsageLastWeek());
 
             String startText = "You've used these apps an average of ";
-            String endText = " a day in total in the last week.";
+            String endText = " a day in total in the last two weeks.";
             SpannableString str = new SpannableString(startText + useMessage + endText);
             str.setSpan(new StyleSpan(Typeface.BOLD), startText.length(), startText.length() + useMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             txtWeekUsage.setText(str);

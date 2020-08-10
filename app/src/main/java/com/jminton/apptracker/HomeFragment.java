@@ -1,24 +1,39 @@
 package com.jminton.apptracker;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
+import android.provider.Settings;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
+
+import com.judemanutd.autostarter.AutoStartPermissionHelper;
 
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link HomeFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class HomeFragment extends Fragment implements View.OnClickListener{
+public class HomeFragment extends Fragment implements View.OnClickListener {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -75,6 +90,17 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         super.onViewCreated(view, savedInstanceState);
         Button btnBack = getActivity().findViewById(R.id.btnSettings);
         btnBack.setOnClickListener(this);
+
+        getActivity().findViewById(R.id.btnDokiGuide).setOnClickListener(this);
+        getActivity().findViewById(R.id.btnAutoStart).setOnClickListener(this);
+
+
+//        if(AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(getActivity().getBaseContext())){
+//            getActivity().findViewById(R.id.deviceWarningBox).setVisibility(View.VISIBLE);
+//        } else {
+//            getActivity().findViewById(R.id.deviceWarningBox).setVisibility(View.INVISIBLE);
+//        }
+
     }
 
     @Override
@@ -83,12 +109,83 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             case R.id.btnSettings:
                 onClickSettings();
                 break;
+            case R.id.btnDokiGuide:
+                onClickDokiGuide();
+                break;
+            case R.id.btnAutoStart:
+                onClickAutoStart();
+                break;
 
         }
     }
 
     public void onClickSettings(){
 
+        AlertDialog.Builder builder = new AlertDialog.Builder(this.getContext());
+        builder.setTitle("Are you sure?");
+        builder.setMessage("It's much better to set a target and then stick to it!");
+
+        // add the buttons
+        builder.setNegativeButton("Proceed", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                EntryTaskDialog ent = new EntryTaskDialog();
+                ent.show(getChildFragmentManager(), "entryTask");
+                dialog.cancel();
+            }
+        });
+        builder.setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        // create and show the alert dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void onClickDokiGuide(){
+        (new DokiDialog()).show(getChildFragmentManager(), null);
+    }
+
+    public void onClickAutoStart(){
+        if(AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(getContext())){
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle("Auto Start settings");
+            builder.setMessage("Please select " + R.string.app_name +
+                    " on the next screen and enable Auto Start.");
+            // add the buttons
+            builder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    AutoStartPermissionHelper.getInstance().getAutoStartPermission(getContext());
+                }
+            });
+            builder.setNegativeButton("Cancel", null);
+            // create and show the alert dialog
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        } else {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setMessage("Auto Start is not needed for your device!");
+            // add the buttons
+            builder.setPositiveButton("Okay!", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            builder.show();
+        }
+    }
+
+    public void onDialogPositiveClick(DialogFragment dialog) {
         ((MainActivity) getActivity()).doAppsSetup();
+
+    }
+
+    public void onDialogNegativeClick(DialogFragment dialog) {
     }
 }

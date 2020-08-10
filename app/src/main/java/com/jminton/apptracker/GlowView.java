@@ -59,9 +59,6 @@ public class GlowView extends View {
         paint.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP));
 
         canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
-
-        Log.d("On draw", " . ");
-
     }
 
     public void setColour(int color){

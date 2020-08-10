@@ -44,6 +44,10 @@ dependencies {
     compile 'com.github.bosphere.android-fadingedgelayout:fadingedgelayout:1.0.0'
     implementation 'com.google.firebase:firebase-crashlytics:17.1.1'
     implementation 'com.github.judemanutd:autostarter:1.0.8'
+    implementation('dev.doubledot.doki:library:0.0.1@aar') {
+        transitive = true
+    }
+
 
     // ...
     compile 'com.rvalerio:fgchecker:1.1.0'

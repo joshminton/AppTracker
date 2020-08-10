@@ -3,16 +3,21 @@ package com.jminton.apptracker;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -95,7 +100,7 @@ public class TrackingService extends Service {
     private int startHour = 05;
     private int startMinute = 30;
 
-    private int dailyQuotaMinutes = 2;
+    private int dailyQuotaMinutes = 60;
 
     private long interval = 2500;
 
@@ -108,7 +113,7 @@ public class TrackingService extends Service {
     FadingEdgeLayout fadingEdge;
     OuterGlowView outerGlow;
     InnerGlowView innerGlow;
-    int fadingEdgeLength = 200;
+    int fadingEdgeLength = 300;
     private DisplayMetrics displayMetrics;
 
     HashMap<String, TrackedApp> apps;
@@ -118,7 +123,7 @@ public class TrackingService extends Service {
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 1;
+    private int heavyUseInterval = 15;
 
     private int LAYOUT_FLAG;
 
@@ -149,9 +154,6 @@ public class TrackingService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        startService(new Intent(getBaseContext(), ReportService.class));
-
-//        db = Room.databaseBuilder(getApplicationContext(), TrackedAppDatabase.class, "tracked-apps").allowMainThreadQueries().build();
         sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         trackedAppCodes = getTrackedAppsFromPrefs();
         loadSavedQuota();
@@ -225,7 +227,6 @@ public class TrackingService extends Service {
         initOverlay();
         new Handler().post(new tracking());
         updateOverlay("none");
-//        show(overlay.findViewById(R.id.innerGlow), 1f);
     }
 
 
@@ -233,10 +234,10 @@ public class TrackingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 //        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
 
-        Log.d(this.getPackageName(), "hey");
+//        Log.d(this.getPackageName(), "hey");
 
 //        hide(outerGlow);
-        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
+//        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
 
         if (intent.getBooleanExtra("crash", false)) {
             Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
@@ -268,11 +269,17 @@ public class TrackingService extends Service {
             wm.removeView(overlay);
             overlay = null;
         }
-//
-//        Intent restartIntent = new Intent(this, RestartReceiver.class);
-//        this.sendBroadcast(restartIntent);
+        Log.d("Crashed, ", "removing.");
 
-        Log.d("HEY", "----------------------");
+        Intent restartIntent = new Intent(this, RestartReceiver.class);
+        this.sendBroadcast(restartIntent);
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        Intent restartIntent = new Intent(this, RestartReceiver.class);
+        this.sendBroadcast(restartIntent);
     }
 
     @Override
@@ -520,7 +527,12 @@ public class TrackingService extends Service {
             }
         }
 
-        mBuilder.setContentText("You have used " + (int) (quotaPercentageUsed * 100) + "% of your daily allowance.");
+        if(quotaPercentageUsed >= 1){
+            mBuilder.setContentText("You have exceeded your daily target.");
+        } else {
+            mBuilder.setContentText("You have used up " + (int) (quotaPercentageUsed * 100) + "% of your daily target.");
+        }
+
 
         if(isTracked){
             float[] notifColor = new float[3];
@@ -564,7 +576,7 @@ public class TrackingService extends Service {
                         outerGlow.invalidate();
                     }
                 });
-                anim.setDuration(interval);
+                anim.setDuration(interval / 2);
                 anim.start();
                 Log.d("Colour change", "From " + newColor + " to " + Color.HSVToColor(hsv));
                 colourFilterColour = Color.HSVToColor(hsv);
@@ -579,7 +591,7 @@ public class TrackingService extends Service {
                         outerGlow.invalidate();
                     }
                 });
-                anim.setDuration(interval);
+                anim.setDuration(interval / 2);
                 anim.start();
                 Log.d("Colour change here", "From " + colourFilterColour + " to " + newColor);
                 colourFilterColour = newColor;
@@ -604,6 +616,7 @@ public class TrackingService extends Service {
         overlay.getRootView().requestLayout();
         innerGlow.invalidate();
         outerGlow.invalidate();
+//        int n = 1 / 0;
     }
 
     private void updateNonTrackedGlow(){
@@ -638,11 +651,9 @@ public class TrackingService extends Service {
         innerGlow.setHeight((float) quotaPercentageUsed, height);
 
         int fadingEdgeLengthPx = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, fadingEdgeLength, displayMetrics);
-
         if(quotaPercentageUsed > 0.9){
             fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * (1 - quotaPercentageUsed) * 10);
             fadingEdge.setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
-            Log.d("yep", "   ");
         } else if(quotaPercentageUsed < 0.1){
             fadingEdgeLengthPx = (int) (fadingEdgeLengthPx * quotaPercentageUsed * 10);
             fadingEdge.setFadeSizes(fadingEdgeLengthPx, 0, 0, 0);
@@ -895,6 +906,8 @@ public class TrackingService extends Service {
             text = text.concat(dateString + "," + u.getPackageName() + "," + name + "," + u.getTotalTimeInForeground() + "," + tracked + "\n");
         }
 
+        text = text.concat("Tracked apps are " + sharedPref.getString("tracked-apps", " ") + "\n");
+        text = text.concat("Daily quota is set as: " + String.valueOf(dailyQuotaMinutes) + "\n");
 
         Date todayDate = Calendar.getInstance().getTime();
         String todayString = formatter.format(todayDate);
@@ -992,6 +1005,43 @@ public class TrackingService extends Service {
         return formatter.format(todayDate);
     }
 
+    //https://www.zoftino.com/android-job-scheduler-example
+    private void scheduleRunCheck(){
+        ComponentName serviceComponent = new ComponentName(this, RestartService.class);
+        JobInfo.Builder builder = new JobInfo.Builder(0, serviceComponent);
+        builder.setMinimumLatency(20000); // wait at least
+        builder.setOverrideDeadline(30000); // maximum delay
+        JobScheduler jobScheduler = getSystemService(JobScheduler.class);
+        jobScheduler.schedule(builder.build());
+    }
+
+    private void setNotificationAlarm(){
+        //Alarm Manager
+
+        Calendar time = Calendar.getInstance();
+
+        time.set(Calendar.HOUR_OF_DAY, 1);//set the alarm time
+        time.set(Calendar.MINUTE, 12);
+        time.set(Calendar.SECOND,0);
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent i = new Intent(this, RestartReceiver.class);
+        i.setAction("android.intent.action.NOTIFY");
+        PendingIntent pi = PendingIntent.getBroadcast(this, 0, i,
+                PendingIntent.FLAG_ONE_SHOT);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, time.getTimeInMillis(), 1000 * 60 * 10, pi); // Millisec * Second * Minute
+
+
+
+        if (Build.VERSION.SDK_INT >= 23){
+
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,time.getTimeInMillis(),pi);
+        }
+
+        else{
+            am.set(AlarmManager.RTC_WAKEUP,time.getTimeInMillis(),pi);
+        }
+
+    }
 }
 
 

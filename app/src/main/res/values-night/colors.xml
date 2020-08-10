@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#ffc107</color>
+    <color name="colorPrimaryDark">#C1991A</color>
+    <color name="colorAccent">#ffc107</color>
+    <color name="colorAccentLight">#FFEBAC</color>
+    <color name="selectedTint">#44FFEBAC</color>
+
+    <color name="statusBarColour">#470925</color>
+
+    <color name="gradientTop">#470925</color>
+    <color name="gradientMid">#670e36</color>
+    <color name="gradientBottom">#981550</color>
+
+    <color name="themeCompatBackground">#393939</color>
+    <color name="themeCompatTextColour">#EEEEEE</color>
+
+
+</resources>

@@ -11,7 +11,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:fel_size_top="200dp"
+            app:fel_size_top="300dp"
             app:fel_edge="top">
                 <com.jminton.apptracker.InnerGlowView
                     android:id="@+id/innerGlow"

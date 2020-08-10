@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE resources [
     <!ENTITY appname "AppTracker">
-    <!ENTITY author "MrGreen">
+    <!ENTITY appnamecaps "APPTRACKER">
     ]>
 
 <resources>
@@ -12,11 +12,13 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
+    <string name="settings_button">&appnamecaps; SETTINGS</string>
+
     <string name="status_title">&appname; is running!</string>
     <string name="status_message">Progress towards your daily quota of app use, for the apps you selected, is visualised around the edge of the screen.
-        \n\nAnd the more you use an app you\'re aiming to use less, the brighter this will get.
-        \n\nWhen you stop using it, this will \'cool off\'.
+        \n\nAnd the more you use an app you\'re aiming to use less, the brighter this will get. When you stop using it, this will \'cool off\'.
     </string>
+    <string name="device_warning">Some devices run aggressive battery saving processes that may stop &appname; from working reliably or prevent it from running automatically. Please press the buttons below for some tips on how to disable such optimisations for &appname;, and to enable auto start if your device requires it. Thank you!</string>
 
 
 </resources>

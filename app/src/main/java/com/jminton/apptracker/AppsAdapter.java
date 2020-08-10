@@ -1,5 +1,8 @@
 package com.jminton.apptracker;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -55,7 +58,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 listApps.get(tApp.getPackageName()).setTracked(true);
                 tApp.setTracked(true);
                 listLayout.setCardElevation(10);
-                listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.colorAccentLight));
+                listLayout.getBackground().setColorFilter(v.getResources().getColor(R.color.selectedTint), PorterDuff.Mode.SRC_ATOP);
                 numSelected++;
             }
             else  {
@@ -63,7 +66,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
                 listApps.get(tApp.getPackageName()).setTracked(false);
                 tApp.setTracked(false);
                 listLayout.setCardElevation(1);
-                listLayout.setCardBackgroundColor(v.getResources().getColor(R.color.blankSurface));
+                listLayout.getBackground().clearColorFilter();
                 numSelected--;
             }
             Log.d("YEEEE", "HAAAAA");
@@ -109,11 +112,11 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.MyViewHolder> 
         if(arrayListApps.get(position).isTracked()){
             holder.checkBox.setChecked(true);
             holder.listLayout.setCardElevation(10);
-            holder.listLayout.setCardBackgroundColor(holder.itemView.getResources().getColor(R.color.colorAccentLight));
+            holder.listLayout.getBackground().setColorFilter(holder.listLayout.getResources().getColor(R.color.selectedTint), PorterDuff.Mode.SRC_ATOP);
         } else {
             holder.checkBox.setChecked(false);
             holder.listLayout.setCardElevation(1);
-            holder.listLayout.setCardBackgroundColor(holder.itemView.getResources().getColor(R.color.blankSurface));
+            holder.listLayout.getBackground().clearColorFilter();
         }
 
 

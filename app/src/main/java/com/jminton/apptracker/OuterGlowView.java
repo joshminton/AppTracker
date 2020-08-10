@@ -10,7 +10,7 @@ public class OuterGlowView extends GlowView {
 
     public OuterGlowView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.outer_glow);
+        this.bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.outer_glow_2);
         init();
     }
 }

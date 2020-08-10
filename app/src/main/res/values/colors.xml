@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#9c27b0</color>
-    <color name="colorPrimaryDark">#6a0080</color>
+    <color name="colorPrimary">#670e36</color>
+    <color name="colorPrimaryDark">#470925</color>
     <color name="colorAccent">#ffc107</color>
     <color name="colorAccentLight">#FFEBAC</color>
 
     <color name="blankSurface">#FFFFFF</color>
+
+    <color name="statusBarColour">#470925</color>
 
     <color name="activeTabColor">#9c27b0</color>
     <color name="inactiveTabColor">#ECECEC</color>
@@ -14,5 +16,16 @@
     <color name="success">#45DC6B</color>
 
     <color name="white">#FFFFFF</color>
+
+    <color name="selectedTint">#FFEBAC</color>
+
+    <color name="gradientTop">#470925</color>
+    <color name="gradientMid">#670e36</color>
+    <color name="gradientBottom">#ffc107</color>
+
+    <color name="themeCompatBackground">#FFFFFF</color>
+    <color name="themeCompatTextColour">#222222</color>
+
+
 
 </resources>

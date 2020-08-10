@@ -10,6 +10,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,9 +22,11 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
+import dev.doubledot.doki.ui.DokiActivity;
 
 import android.util.Log;
 import android.view.MenuItem;
@@ -50,7 +53,7 @@ import java.io.File;
 //https://inducesmile.com/android/android-list-installed-apps-in-device-programmatically/
 //https://github.com/adriangl/OverlayHelper/blob/master/app/src/main/java/com/adriangl/overlayhelperexample/MainActivity.java
 
-public class MainActivity extends AppCompatActivity implements  BottomNavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements  BottomNavigationView.OnNavigationItemSelectedListener, EntryTaskDialog.EntryTaskDialogListener {
 
     Intent svc;
     TrackingService trackingService;
@@ -76,12 +79,14 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // FullScreen
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
 
-        if(AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(getBaseContext())){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            getWindow().getDecorView().setSystemUiVisibility(0);
+
+//        getWindow().setNavigationBarColor(Color.parseColor("#20111111"));
+
+        if(AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(getBaseContext()) && !sharedPref.getBoolean("doneSetup", false)){
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Allow this app to auto-start itself?");
             builder.setMessage("Your phone restricts apps from starting themselves when you turn on your device. " +
@@ -97,6 +102,9 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
             // create and show the alert dialog
             AlertDialog dialog = builder.create();
             dialog.show();
+
+
+
         }
 
         appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
@@ -155,7 +163,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
 
 //        setContentView(R.layout.activity_main);
 
-        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         if(!sharedPref.getBoolean("doneSetup", false)){
             doAppsSetup();
         } else {
@@ -362,8 +369,20 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         Log.d("S", "onDestroy");
         if(sharedPref != null){
             if(!sharedPref.getBoolean("doneSetup", false)){
-                trackingService.stopForeground(true);
+                if(trackingService != null){
+                    trackingService.stopForeground(true);
+                }
             }
         }
+    }
+
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog) {
+        homeFrag.onDialogPositiveClick(dialog);
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+        homeFrag.onDialogNegativeClick(dialog);
     }
 }

@@ -13,8 +13,6 @@ public class RestartReceiver extends BroadcastReceiver {
 
         Log.d("HERE", "HERE");
 
-        Toast.makeText(context, "ON RESTART", Toast.LENGTH_LONG);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(new Intent(context,TrackingService.class));
         } else {
