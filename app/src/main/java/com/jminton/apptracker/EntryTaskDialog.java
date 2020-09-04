@@ -51,7 +51,7 @@ public class EntryTaskDialog extends DialogFragment {
         Random random = new Random();
         final StringBuilder entryText = new StringBuilder();
 
-        int numBlocks = 10;
+        int numBlocks = 0;
 
         for(int y = 0; y < numBlocks; y++){
             for(int x = 0; x < 6; x++){
@@ -69,6 +69,7 @@ public class EntryTaskDialog extends DialogFragment {
         final View view = inflater.inflate(R.layout.entry_task_dialog, null);
         ((TextView) view.findViewById(R.id.entryText)).setText(entryText.toString(), TextView.BufferType.NORMAL);
 
+        //https://developer.android.com/guide/topics/ui/dialogs
         // Inflate and set the layout for the dialog
         // Pass null as the parent view because its going in the dialog layout
         builder.setView(view)

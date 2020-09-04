@@ -66,21 +66,6 @@ public class LimitsFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-//            int currentNightMode = getContext().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-//            switch (currentNightMode) {
-//                case Configuration.UI_MODE_NIGHT_NO:
-//                    getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-//                    break;
-//                case Configuration.UI_MODE_NIGHT_YES:
-//                    getActivity().getWindow().getDecorView().setSystemUiVisibility(0);
-//                    break;
-//            }
-//        }
-
-
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);

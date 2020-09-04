@@ -15,12 +15,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
-import dev.doubledot.doki.api.models.DokiManufacturer;
-import dev.doubledot.doki.api.remote.DokiApiService;
-import dev.doubledot.doki.api.tasks.DokiApi;
+
 import dev.doubledot.doki.views.DokiContentView;
 
 public class DokiDialog extends DialogFragment {
+    //https://developer.android.com/guide/topics/ui/dialogs
 
     @NonNull
     @Override
@@ -41,7 +40,6 @@ public class DokiDialog extends DialogFragment {
             dCV.setSecondaryTextColor(getResources().getColor(R.color.themeCompatTextColour));
             dCV.setButtonsTextColor(getResources().getColor(R.color.colorPrimary));
         }
-
 
         // Inflate and set the layout for the dialog
         // Pass null as the parent view because its going in the dialog layout

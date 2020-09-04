@@ -13,13 +13,6 @@ public class BootUpReceiver extends BroadcastReceiver{
     @Override
     //https://stackoverflow.com/a/20920004/3032936
     public void onReceive(Context context, Intent intent) {
-//        /****** For Start Activity *****/
-//        Intent i = new Intent(context, MyActivity.class);
-//        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//        context.startActivity(i);
-
-//        Toast.makeText(context, "ON BOOT", Toast.LENGTH_LONG);
-
         IntentFilter ifilter = new IntentFilter();
         ifilter.addAction(Intent.ACTION_POWER_CONNECTED);
         ifilter.addAction(Intent.ACTION_POWER_DISCONNECTED);

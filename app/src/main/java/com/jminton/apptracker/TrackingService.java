@@ -3,21 +3,16 @@ package com.jminton.apptracker;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -34,8 +29,6 @@ import android.os.IBinder;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
 
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -47,8 +40,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.bosphere.fadingedgelayout.FadingEdgeLayout;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -73,25 +64,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 //https://stackoverflow.com/questions/55045005/draw-overlay-underneath-navigation-bar
-//https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
+//https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff provided code which is quite integral to the overlay working.
 //https://proandroiddev.com/bound-and-foreground-services-in-android-a-step-by-step-guide-5f8362f4ae20
 
 public class TrackingService extends Service {
-
-    private View topLeftView;
 
     private int height;
     private int width;
 
     private View overlay;
-    private float offsetX;
-    private float offsetY;
-    private int originalXPos;
-    private int originalYPos;
-    private boolean moving;
     private WindowManager wm;
 
     private android.app.Notification notification;
@@ -117,13 +100,12 @@ public class TrackingService extends Service {
     private DisplayMetrics displayMetrics;
 
     HashMap<String, TrackedApp> apps;
-    private TrackedAppDatabase db;
     private SharedPreferences sharedPref;
     ArrayList<String> trackedAppCodes;
 
     private int colourFilterColour;
 
-    private int heavyUseInterval = 15;
+    private int heavyUseInterval = 2;
 
     private int LAYOUT_FLAG;
 
@@ -174,10 +156,8 @@ public class TrackingService extends Service {
 
         mBuilder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID);
 
-
         notification =  mBuilder
                 .setContentTitle("Tracking your usage.")
-//                .setContentText("Currently used " + (int) (quotaPercentageUsed() * 100) + "%")
                 .setSmallIcon(R.drawable.ic_baseline_phone_android_24)
                 .setContentIntent(pendingIntent)
                 .setTicker("Oi oi!")
@@ -232,33 +212,10 @@ public class TrackingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-//        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-
-//        Log.d(this.getPackageName(), "hey");
-
-//        hide(outerGlow);
-//        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler(this));
-
-        if (intent.getBooleanExtra("crash", false)) {
-            Toast.makeText(this, "App restarted after crash", Toast.LENGTH_SHORT).show();
-
-            Log.d("Restart after", "CRASSSSSHHHHHHHHHHHHHHHHHHH");
-        }
-
-//        PeriodicWorkRequest uploadCrashRequest =
-//                new PeriodicWorkRequest.Builder(ReportUploadWorker.class, 5, TimeUnit.MINUTES)
-//                        // Constraints
-//                        .build();
-//
-//        WorkManager
-//                .getInstance(getApplicationContext())
-//                .enqueue(uploadCrashRequest);
-
-
 //        // If we get killed, after returning from here, restart
-        return START_STICKY;
+//        return START_STICKY;
 
-//        return android.app.Service.START_REDELIVER_INTENT;
+        return android.app.Service.START_REDELIVER_INTENT;
     }
 
 
@@ -289,13 +246,6 @@ public class TrackingService extends Service {
         initOverlay();
 
         updateOverlay("none");
-
-        // Checks the orientation of the screen
-//        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
-//        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
-//            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
-//        }
     }
 
     private void initOverlay(){
@@ -304,6 +254,7 @@ public class TrackingService extends Service {
             wm.removeView(overlay);
         }
 
+        //https://stackoverflow.com/a/16416682/3032936
         Display display = wm.getDefaultDisplay();
         Point size = new Point();
         display.getRealSize(size);
@@ -323,18 +274,9 @@ public class TrackingService extends Service {
         reset = false;
         glowSwitch = false;
 
-//        View innerGlow = overlay.findViewById(R.id.innerGlow);
-//        View outerGlow = overlay.findViewById(R.id.outerGlow);
-//        View fadingEdge = overlay.findViewById(R.id.fadingEdge);
-
-//        innerGlow.getLayoutParams().width = width;
-//        outerGlow.getLayoutParams().width = width;
-//        innerGlow.getLayoutParams().height = height;
-//        outerGlow.getLayoutParams().height = height;
-//        fadingEdge.getLayoutParams().width = width;
-//        fadingEdge.getLayoutParams().height = height;
         updateOverlay("not sure");
 
+        //https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
         WindowManager.LayoutParams params = new LayoutParams(width,
                 height,
                 LAYOUT_FLAG,
@@ -446,35 +388,6 @@ public class TrackingService extends Service {
         setAverageUsageLastWeek();
     }
 
-    public void runTracking(final Context context){
-        //https://stackoverflow.com/questions/3873659/android-how-can-i-get-the-current-foreground-activity-from-a-service/27642535
-        final Handler handler = new Handler();
-        final UsageStatsManager usm = (UsageStatsManager) this.getSystemService(Context.USAGE_STATS_SERVICE);
-
-        final AppChecker appChecker = new AppChecker();
-
-        final String lastAppPkgName = "";
-
-        handler.post(new Runnable() {
-            @Override
-            public void run(){
-
-                refreshUsageStats();
-
-                String currentApp = appChecker.getForegroundApp(context);
-
-
-                if(apps.get(currentApp).isTracked()){
-//                    show();
-                } else {
-//                    hide();
-                }
-
-                handler.postDelayed(this, 10000);
-            }
-        });
-    }
-
     public class tracking implements Runnable {
         private String lastPkgName;
 
@@ -483,8 +396,6 @@ public class TrackingService extends Service {
 
         @Override
         public void run() {
-//            refreshUsageStats();
-
             try {
                 lastPkgName = updateOverlay(lastPkgName);
             } catch (NullPointerException e){
@@ -501,8 +412,6 @@ public class TrackingService extends Service {
     }
 
     private String updateOverlay(String lastPkgName){
-        //            getScreenState?
-
         currentApp = appChecker.getForegroundApp(TrackingService.this);
 
         if(lastPkgName == null){
@@ -559,7 +468,6 @@ public class TrackingService extends Service {
         show(outerGlow, recentPercentage);
         show(innerGlow, 1f);
 
-
         if(recentPercentage == 1){
 
             if(glowSwitch){
@@ -598,7 +506,6 @@ public class TrackingService extends Service {
             }
             glowSwitch = !glowSwitch;
         } else {
-            //        ((BottomCropImage) overlay.findViewById(R.id.innerGlow)).setColorFilter(newColor);
             ValueAnimator anim = ValueAnimator.ofArgb(colourFilterColour, newColor);
             anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -696,7 +603,8 @@ public class TrackingService extends Service {
         return false;
     }
 
-
+    //the main purpose of this method was achieved using the sources below. The code is not identical
+    //but is highly adapted from these sources.
     //main suggestion https://stackoverflow.com/a/61595525/3032936
     //some influence https://stackoverflow.com/a/50647945/3032936
     public HashMap<String, AppUsageInfo> queryUsageStatistics(Context context, long startTime, long endTime) {
@@ -795,7 +703,7 @@ public class TrackingService extends Service {
     }
 
     private float recentPercentage(){
-        Log.d("Calculation: ", (float) trackedUsageInLast(heavyUseInterval * 60) + " / " + (float) (heavyUseInterval * 60));
+//        Log.d("Calculation: ", (float) trackedUsageInLast(heavyUseInterval * 60) + " / " + (float) (heavyUseInterval * 60));
         return (float) trackedUsageInLast(heavyUseInterval * 60) / (float) (heavyUseInterval * 60);
     }
 
@@ -817,21 +725,6 @@ public class TrackingService extends Service {
             if(apps.get(currentApp).isTracked()){
                 if(usage == 0){
                     usage = seconds * 1000;
-                }
-            }
-        }
-
-        return usage / 1000;
-    }
-
-    private long trackedUsageThisDaySeconds(){
-        Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
-        long usage = 0;
-
-        for (TrackedApp tApp : apps.values()){
-            if(tApp.isTracked()){
-                if(usageStatsMap.get(tApp.getPackageName()) != null){
-                    usage += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();
                 }
             }
         }
@@ -881,9 +774,7 @@ public class TrackingService extends Service {
 
         UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
 
-        List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, System.currentTimeMillis() - (604800000 * 2), System.currentTimeMillis());
-
-        HashMap<String, ArrayList<Long>> packageUsages = new HashMap<>();
+        List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, 0, System.currentTimeMillis());
 
         String text = "";
 
@@ -940,10 +831,25 @@ public class TrackingService extends Service {
     }
 
     private double quotaPercentageUsed(){
-        long trackedUsageThisDaySeconds = trackedUsageThisDaySeconds();
+
+        Map<String, AppUsageInfo> usageStatsMap = getUsageInfoThisDay();
+        long trackedUsageThisDaySeconds = 0;
+
+        for (TrackedApp tApp : apps.values()){
+            if(tApp.isTracked()){
+                if(usageStatsMap.get(tApp.getPackageName()) != null){
+                    trackedUsageThisDaySeconds += usageStatsMap.get(tApp.getPackageName()).getTimeInForeground();
+                }
+            }
+        }
+
+        trackedUsageThisDaySeconds = trackedUsageThisDaySeconds / 1000;
+
         return Math.min((double) trackedUsageThisDaySeconds / (dailyQuotaMinutes * 60), 1);
     }
 
+
+    //takes cues from https://stackoverflow.com/a/44326986/3032936
     private int getColorFromPercentage(float percentage){
         float max = 0f;
         float min = 60f;
@@ -969,6 +875,7 @@ public class TrackingService extends Service {
         Log.d("debug", dailyQuotaMinutes + " ");
     }
 
+    //Firebase's online quick set-up guides inspire much of the code here -- as is the intention of those guides.
     private void uploadUsage(String filename){
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
@@ -1004,46 +911,6 @@ public class TrackingService extends Service {
         Date todayDate = Calendar.getInstance().getTime();
         return formatter.format(todayDate);
     }
-
-    //https://www.zoftino.com/android-job-scheduler-example
-    private void scheduleRunCheck(){
-        ComponentName serviceComponent = new ComponentName(this, RestartService.class);
-        JobInfo.Builder builder = new JobInfo.Builder(0, serviceComponent);
-        builder.setMinimumLatency(20000); // wait at least
-        builder.setOverrideDeadline(30000); // maximum delay
-        JobScheduler jobScheduler = getSystemService(JobScheduler.class);
-        jobScheduler.schedule(builder.build());
-    }
-
-    private void setNotificationAlarm(){
-        //Alarm Manager
-
-        Calendar time = Calendar.getInstance();
-
-        time.set(Calendar.HOUR_OF_DAY, 1);//set the alarm time
-        time.set(Calendar.MINUTE, 12);
-        time.set(Calendar.SECOND,0);
-        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        Intent i = new Intent(this, RestartReceiver.class);
-        i.setAction("android.intent.action.NOTIFY");
-        PendingIntent pi = PendingIntent.getBroadcast(this, 0, i,
-                PendingIntent.FLAG_ONE_SHOT);
-        am.setRepeating(AlarmManager.RTC_WAKEUP, time.getTimeInMillis(), 1000 * 60 * 10, pi); // Millisec * Second * Minute
-
-
-
-        if (Build.VERSION.SDK_INT >= 23){
-
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,time.getTimeInMillis(),pi);
-        }
-
-        else{
-            am.set(AlarmManager.RTC_WAKEUP,time.getTimeInMillis(),pi);
-        }
-
-    }
 }
 
-
-
-
+//soli Deo gloria!

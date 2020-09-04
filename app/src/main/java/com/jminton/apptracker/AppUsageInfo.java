@@ -1,5 +1,6 @@
 package com.jminton.apptracker;
 
+//taken from https://stackoverflow.com/a/61595525/3032936 in combination with queryUsageStatistics() method in TrackingService class.
 public class AppUsageInfo {
 
     public long timeInForeground;

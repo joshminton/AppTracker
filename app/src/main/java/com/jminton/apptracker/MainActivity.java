@@ -46,7 +46,7 @@ import com.judemanutd.autostarter.AutoStartPermissionHelper;
 
 import java.io.File;
 
-//https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff
+//https://gist.github.com/MaTriXy/9f291bccd8123a5ae8e6cb9e21f627ff provided code which is quite integral to the overlay working.
 //https://fabcirablog.weebly.com/blog/creating-a-never-ending-background-service-in-android
 //https://blog.usejournal.com/building-an-app-usage-tracker-in-android-fe79e959ab26
 //https://www.tutorialspoint.com/how-to-manage-startactivityforresult-on-android
@@ -207,22 +207,6 @@ public class MainActivity extends AppCompatActivity implements  BottomNavigation
         fT.commit();
         return false;
     }
-
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//
-//
-////        sharedPref = getSharedPreferences("preferences", Context.MODE_PRIVATE);
-////
-////        if(sharedPref.getBoolean("doneSetup", false)){
-////            Log.d("Got here", "boiiiiii");
-////            FragmentTransaction fT = fm.beginTransaction();
-////            fT.replace(R.id.frag_frame, homeFrag).commit();
-////        } else {
-////            doAppsSetup();
-////        }
-//    }
 
     @Override
     protected void onStart() {
