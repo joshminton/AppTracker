@@ -18,21 +18,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
     </FrameLayout>
-
-<!--    <com.google.android.material.bottomnavigation.BottomNavigationView-->
-<!--        android:id="@+id/bottomNav"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:background="?android:attr/windowBackground"-->
-<!--        android:backgroundTint="#FFFFFF"-->
-<!--        app:backgroundTint="#FFFFFF"-->
-<!--        app:itemIconTint="#AAAAAA"-->
-<!--        app:itemTextColor="#AAAAAA"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintLeft_toLeftOf="parent"-->
-<!--        app:layout_constraintRight_toRightOf="parent"-->
-<!--        app:menu="@menu/bottom_menu"-->
-<!--        android:theme="@style/BottomNavigationTheme"/>-->
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>
