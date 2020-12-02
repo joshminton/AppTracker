@@ -1,3 +1,10 @@
-#Tackling problematic smartphone usage with on-screen usage feedback
-##Or 'helping people use their phones less by giving them a sense of how much they've used their device'
+# Tackling problematic smartphone usage with on-screen usage feedback
+## _Or 'helping people use their phones less by giving them a sense of how much they've used their device'_
 
+AppTracker is an app developed as part of an MSc Human Computer Interaction dissertation, which builds on research into problematic smartphone usage and techniques. A survey of existing literature and solutions found that while _tracking_ of phone use is now a common and readily available feature, this tracking data is not always immediately available to the user. AppTracker attempts to remove the need for frustrating interventions such as outright restriction of app usage, by instead giving the user a continuous, subliminal awareness of their smartphone usage, encouraging mindfulness.
+
+This awareness is achieved by displaying an 'edge glow' on screen, at all times. It changes into two dimensions -- the amount of the screen edge it covers, and the intensity/colour/brightness of the glow -- to communicate two distinct quantities; the user's progress towards a daily target of usage, and particularly intense usage sessions. The latter builds on a finding from previous research that these long, mindless, habitual use cases are perceived as particularly unsatisfying by users, giving a sense of a lack of autonomy.
+
+In short, the edge of the screen gets more and more red when a problematic app is used for a longer period of time, and the more these apps are used in a single day, the more of the screen the glow will surround. The app therefore asks users to select apps they wish to use less of, and to set a daily usage target.
+
+Frustration with any phone usage intervention will only increase the chance the user removes it. To minimise this frustration, the app uses a _targeted_ and _scaled_ approach. Firstly, it is targeted in that only apps the user has said they want to use less of are affected -- so the user has already bought into this. Useful functions of the phone remain fully accessible. Secondly, the glow scales to the amount of usage, being barely noticeable after a short time, but gradually becoming more and more obtrusive.
