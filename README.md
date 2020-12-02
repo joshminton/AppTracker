@@ -13,6 +13,8 @@ This is a _targeted_ and _scaled_ approach, aimed at reducing the frustration ex
 
 More on the design of the app and the theory behind it can be found in the [project report](ProjectReport.pdf).
 
+[Demo video](https://youtu.be/rksy3_paWeU)
+
 ![App interface screenshots](Screenshots/interface.png)
 
 ### Trial and results
