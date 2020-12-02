@@ -1,6 +1,8 @@
 # Tackling problematic smartphone usage with on-screen usage feedback
 ## _Or 'helping people use their phones less by giving them a sense of how much they've used their device'_
 
+![Main Image of app active](Screenshots/comparison.png)
+
 AppTracker is an app developed as part of an MSc Human Computer Interaction dissertation, which builds on research into problematic smartphone usage and techniques. A survey of existing literature and solutions found that while _tracking_ of phone use is now a common and readily available feature, this tracking data is not always immediately available to the user. AppTracker attempts to remove the need for frustrating interventions such as outright restriction of app usage, by instead giving the user a continuous, subliminal awareness of their smartphone usage, encouraging mindfulness.
 
 This awareness is achieved by displaying an 'edge glow' on screen, at all times. It changes into two dimensions -- the amount of the screen edge it covers, and the intensity/colour/brightness of the glow -- to communicate two distinct quantities; the user's progress towards a daily target of usage, and particularly intense usage sessions. The latter builds on a finding from previous research that these long, mindless, habitual use cases are perceived as particularly unsatisfying by users, giving a sense of a lack of autonomy.
@@ -11,7 +13,7 @@ This is a _targeted_ and _scaled_ approach, aimed at reducing the frustration ex
 
 More on the design of the app and the theory behind it can be found in the [project report](ProjectReport.pdf).
 
-### Screenshots
+![App interface screenshots](Screenshots/interface.png)
 
 ### Trial and results
 After the app was developed, a two week study was completed by fourteen participants who used the app on their phones. Anonymised usage data was collected using Firebase. The results were very pleasing: analysis found that average daily usage of apps each user chose to use less reduced by 25.1% on average for the period after installing AppTracker, which was a statistically significant result. Additionally, average daily usage of apps the user did not choose to use less reduced by only 1.7%. 10 of 12 resondents to a post-trial questionnaire felt the app helped them manage their smartphone usage to at least a decent extent.
