@@ -7,4 +7,12 @@ This awareness is achieved by displaying an 'edge glow' on screen, at all times.
 
 In short, the edge of the screen gets more and more red when a problematic app is used for a longer period of time, and the more these apps are used in a single day, the more of the screen the glow will surround. The app therefore asks users to select apps they wish to use less of, and to set a daily usage target.
 
-Frustration with any phone usage intervention will only increase the chance the user removes it. To minimise this frustration, the app uses a _targeted_ and _scaled_ approach. Firstly, it is targeted in that only apps the user has said they want to use less of are affected -- so the user has already bought into this. Useful functions of the phone remain fully accessible. Secondly, the glow scales to the amount of usage, being barely noticeable after a short time, but gradually becoming more and more obtrusive.
+This is a _targeted_ and _scaled_ approach, aimed at reducing the frustration experienced by the user as a result of using AppTracker, as frustration is the main cause of deactivating similar intervention software. Firstly, it is _targeted_ in that only apps the user has said they want to use less of are affected -- so the user has already bought into this. Useful functions of the phone remain fully accessible. Secondly, the glow _scales_ to the amount of usage, being barely noticeable after a short time, but gradually becoming more and more obtrusive.
+
+More on the design of the app and the theory behind it can be found in the [project report](project report.pdf).
+
+### Screenshots
+
+### Trial and results
+After the app was developed, a two week study was completed by fourteen participants who used the app on their phones. Anonymised usage data was collected using Firebase. The results were very pleasing: analysis found that average daily usage of apps each user chose to use less reduced by 25.1% on average for the period after installing AppTracker, which was a statistically significant result. Additionally, average daily usage of apps the user did not choose to use less reduced by only 1.7%. 10 of 12 resondents to a post-trial questionnaire felt the app helped them manage their smartphone usage to at least a decent extent.
+
