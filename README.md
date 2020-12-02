@@ -9,7 +9,7 @@ In short, the edge of the screen gets more and more red when a problematic app i
 
 This is a _targeted_ and _scaled_ approach, aimed at reducing the frustration experienced by the user as a result of using AppTracker, as frustration is the main cause of deactivating similar intervention software. Firstly, it is _targeted_ in that only apps the user has said they want to use less of are affected -- so the user has already bought into this. Useful functions of the phone remain fully accessible. Secondly, the glow _scales_ to the amount of usage, being barely noticeable after a short time, but gradually becoming more and more obtrusive.
 
-More on the design of the app and the theory behind it can be found in the [project report](Project Report.pdf).
+More on the design of the app and the theory behind it can be found in the [project report](ProjectReport.pdf).
 
 ### Screenshots
 
